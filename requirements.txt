@@ -5,3 +5,5 @@ openpyxl>=3.1
 whitenoise>=6.6
 Pillow>=10.0
 gunicorn
+dj-database-url>=2.1
+psycopg2-binary>=2.9

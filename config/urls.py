@@ -1,11 +1,21 @@
 from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import JsonResponse
 from django.urls import path, include
 from django.views.generic import TemplateView
 
+
+def healthcheck(request):
+    """Render keep-alive / monitoring uchun. Tezkor 200 OK qaytaradi."""
+    return JsonResponse({'status': 'ok', 'service': 'turizm-survey'})
+
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    # Keep-alive endpoint (UptimeRobot uchun)
+    path('healthz/', healthcheck, name='healthcheck'),
 
     # Landing
     path('', TemplateView.as_view(template_name='home.html'), name='home'),

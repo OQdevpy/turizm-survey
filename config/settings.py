@@ -56,11 +56,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+import dj_database_url
+
+# Database: DATABASE_URL env var bo'lsa PostgreSQL, aks holda SQLite (lokal dev)
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -80,10 +84,21 @@ USE_TZ = True
 
 LOCALE_PATHS = [BASE_DIR / 'locale']
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# WhiteNoise — production'da static fayllarni gunicorn orqali tarqatadi.
+# CompressedManifestStaticFilesStorage juda strict (har bir fayl mavjud bo'lishi shart) —
+# uning o'rniga oddiy CompressedStaticFilesStorage ishlatamiz.
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
 
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -103,6 +118,10 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 RECAPTCHA_PUBLIC_KEY = config('RECAPTCHA_PUBLIC_KEY', default='6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI')
 RECAPTCHA_PRIVATE_KEY = config('RECAPTCHA_PRIVATE_KEY', default='6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe')
 SILENCED_SYSTEM_CHECKS = ['django_recaptcha.recaptcha_test_key_error']
+
+# WhiteNoise — DEBUG=False bo'lganda ham mahalliy testda ishlash uchun
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = DEBUG
 
 # Security (production)
 if not DEBUG:
