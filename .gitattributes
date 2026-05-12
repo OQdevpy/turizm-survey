@@ -1,0 +1,15 @@
+# Linux server uchun qator yakunlarini majburiy LF qilish (Windows CRLF emas)
+* text=auto eol=lf
+*.sh text eol=lf
+Procfile text eol=lf
+build.sh text eol=lf
+
+# Binary fayllar (qator yakuni o'zgartirilmasin)
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.xlsx binary
+*.docx binary
+*.doc binary
