@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Outbound Tourism Survey{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/outbound.css' %}">
+{% endblock %}
+
+{% block body %}
+{% if is_staff_view %}
+<div class="staff-bar">
+  <div class="sb-left">
+    <span class="sb-logo">📋 STAFF MODE</span>
+    <span class="sb-meta">Bo'lim: <strong>{% if staff_postal_office %}{{ staff_postal_office.code }} — {{ staff_postal_office.name }}{% else %}—{% endif %}</strong></span>
+    <span class="sb-meta">Xodim: <strong>{{ staff_full_name }}</strong></span>
+  </div>
+  <div class="sb-right">
+    <a href="{% url 'dashboard:index' %}">📊 Dashboard</a>
+    <a href="{% url 'staff_surveys:inbound' %}">↔ Inbound</a>
+    <a href="{% url 'accounts:logout' %}" class="sb-logout">Chiqish</a>
+  </div>
+</div>
+{% endif %}
+
+<div class="bg-circles"><div class="bg-circle"></div><div class="bg-circle"></div><div class="bg-circle"></div><div class="bg-circle"></div><div class="bg-circle"></div></div>
+
+<div class="container-center">
+  <div class="pages">
+
+    <!-- HOME + LANGUAGE SELECTION -->
+    <div class="page active" id="page-home">
+      <div class="welcome-header">🌍 UZBEKISTAN TOURISM • OUTBOUND SURVEY</div>
+      <div class="card">
+        <div class="home-body">
+          <div class="lang-tabs">
+            <button class="lang-tab active" id="tab-uz" onclick="setLanguage('uz')"><span class="lang-code">UZ</span> O‘zbekcha</button>
+            <button class="lang-tab" id="tab-ru" onclick="setLanguage('ru')"><span class="lang-code">RU</span> Русский</button>
+          </div>
+          <div class="welcome-box">
+            <div class="welcome-title" id="welcome-title">HURMATLI SAYOHATCHI,</div>
+            <p class="welcome-text" id="welcome-text">Sizni turizmni rivojlantirish va O'zbekistonning turizm hisobini yuritish maqsadida o'tkazilayotgan so'rovnomada qatnashishga taklif qilamiz.</p>
+            <p class="welcome-conf" id="welcome-conf">Javoblaringiz maxfiyligi "Rasmiy statistika to'g'risida"gi Qonun bilan kafolatlanadi.</p>
+          </div>
+          <button class="btn-start" id="start-btn" onclick="startSurvey()">SO'ROVNOMANI BOSHLASH</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SURVEY -->
+    <div class="page" id="page-survey">
+      <div class="card">
+        <div class="survey-header">
+          <div class="survey-type-label">✈️ OUTBOUND TOURISM</div>
+          <div class="progress-wrap">
+            <div class="prog-bg"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+            <div class="prog-lbl" id="prog-lbl">0 / 0</div>
+          </div>
+        </div>
+        <div class="survey-body" id="survey-body"></div>
+        <div class="val-err" id="val-err"></div>
+        <div class="survey-nav">
+          <button class="btn-prev" id="btn-prev" onclick="prevQuestion()">← Back</button>
+          <button class="btn-next" id="btn-next" onclick="nextQuestion()">Next →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUCCESS -->
+    <div class="page" id="page-success">
+      <div class="card">
+        <div class="end-card">
+          <div class="end-icon">✅</div>
+          <h2 class="end-title">Rahmat!</h2>
+          <p class="end-sub">Javoblaringiz muvaffaqiyatli saqlandi.</p>
+          <button class="restart-btn" onclick="window.location.href='{% url 'home' %}'">🏠 Bosh sahifa</button>
+          {% if is_staff_view %}
+          <button class="restart-btn" style="background: var(--green); margin-left: 10px;" onclick="window.location.reload()">+ Yangi so'rovnoma</button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  window.SURVEY_CONFIG = {
+    submitUrl: "{{ submit_url }}",
+    csrfToken: "{{ csrf_token }}",
+    isStaffView: {% if is_staff_view %}true{% else %}false{% endif %},
+    homeUrl: "{% url 'home' %}",
+  };
+</script>
+<script src="{% static 'js/outbound.js' %}"></script>
+{% endblock %}

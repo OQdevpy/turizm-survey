@@ -1,0 +1,88 @@
+/* ============================================
+   Django admin — GPS xarita widgeti
+   ============================================ */
+
+/* Readonly konteynerni to'liq enlikka kengaytirish
+   (admin'da .readonly default inline-block bo'lib qoladi va kollapsga uchraydi) */
+.form-row .readonly {
+    display: block !important;
+    max-width: 100% !important;
+    width: auto !important;
+}
+
+/* Map kontekstidagi parent konteynerlar uchun */
+.field-map_widget,
+.field-map_widget > div,
+.field-map_widget .fieldBox,
+.fieldBox.field-map_widget {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* Asosiy xarita uchun aniq o'lcham */
+.gps-map {
+    display: block !important;
+    width: 720px !important;
+    min-width: 320px !important;
+    max-width: 100% !important;
+    height: 420px !important;
+    margin: 10px 0;
+    background: #e8eef5;
+    border-radius: 12px;
+    border: 2px solid #d0d8e3;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+}
+
+/* Leaflet ichida — to'g'ri to'ldirish */
+.gps-map .leaflet-container {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Leaflet popup'lari dark theme'da chiroyli ko'rinishi uchun */
+.leaflet-popup-content-wrapper {
+    background: #fff !important;
+    color: #1a2f4a !important;
+    border-radius: 10px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+}
+.leaflet-popup-content {
+    color: #1a2f4a !important;
+}
+.leaflet-popup-content code {
+    background: #f0f4fa;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #0b2d5c;
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+    font-size: 12px;
+}
+.leaflet-popup-tip {
+    background: #fff !important;
+}
+.leaflet-container {
+    font-family: system-ui, -apple-system, sans-serif;
+}
+.leaflet-container a {
+    color: #4285f4;
+}
+.leaflet-control-zoom a {
+    color: #0b2d5c !important;
+    background: #fff !important;
+}
+
+/* Telefon / planshet uchun */
+@media (max-width: 900px) {
+    .gps-map {
+        width: 100% !important;
+        height: 380px !important;
+    }
+}
+@media (max-width: 500px) {
+    .gps-map {
+        height: 320px !important;
+    }
+}

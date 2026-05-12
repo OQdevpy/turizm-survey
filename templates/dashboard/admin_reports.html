@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Hisobotlar — Admin{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block body %}
+<div class="staff-bar">
+  <div class="sb-left">
+    <span class="sb-logo">📈 ADMIN HISOBOTLARI</span>
+    <span class="sb-meta">Xodim: <strong>{{ staff_full_name }}</strong></span>
+  </div>
+  <div class="sb-right">
+    <a href="{% url 'dashboard:index' %}">📊 Dashboard</a>
+    <a href="{% url 'admin:index' %}">⚙ Admin panel</a>
+    <a href="{% url 'home' %}">🏠 Bosh sahifa</a>
+    <a href="{% url 'accounts:logout' %}" class="sb-logout">Chiqish</a>
+  </div>
+</div>
+
+<div class="dash-wrap">
+  <div class="dash-h">
+    <div>
+      <div class="breadcrumb">Dashboard / Hisobotlar</div>
+      <h1>📈 Batafsil hisobotlar</h1>
+    </div>
+  </div>
+
+  <!-- Filtrlar -->
+  <form method="get" class="filters-bar">
+    <div class="field">
+      <label>Boshlang'ich sana</label>
+      <input type="date" name="from" value="{{ filters.from }}">
+    </div>
+    <div class="field">
+      <label>Tugash sanasi</label>
+      <input type="date" name="to" value="{{ filters.to }}">
+    </div>
+    <div class="field">
+      <label>So'rovnoma turi</label>
+      <select name="type">
+        <option value="">— Hammasi —</option>
+        <option value="inbound" {% if filters.type == 'inbound' %}selected{% endif %}>Inbound</option>
+        <option value="outbound" {% if filters.type == 'outbound' %}selected{% endif %}>Outbound</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Pochta bo'limi</label>
+      <select name="office">
+        <option value="">— Hammasi —</option>
+        {% for o in offices %}
+          <option value="{{ o.id }}" {% if filters.office == o.id|stringformat:"s" %}selected{% endif %}>{{ o.code }} — {{ o.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn-apply">Qo'llash</button>
+      <a href="{% url 'dashboard:admin_reports' %}" class="btn-reset">Tozalash</a>
+      <a href="{% url 'dashboard:export' %}?from={{ filters.from }}&to={{ filters.to }}" class="btn-export">⬇ Excel</a>
+    </div>
+  </form>
+
+  <div class="cards-grid">
+    <div class="stat-card accent-navy">
+      <div class="stat-icon">📊</div>
+      <div class="stat-label">Jami</div>
+      <div class="stat-value">{{ total|intcomma }}</div>
+    </div>
+    {% for s in by_source %}
+      <div class="stat-card accent-{% if s.source == 'staff' %}yellow{% else %}blue{% endif %}">
+        <div class="stat-icon">{% if s.source == 'staff' %}👤{% else %}🌍{% endif %}</div>
+        <div class="stat-label">{% if s.source == 'staff' %}Xodim kiritgan{% else %}Self (turist){% endif %}</div>
+        <div class="stat-value">{{ s.c|intcomma }}</div>
+      </div>
+    {% endfor %}
+    {% for t in by_type %}
+      <div class="stat-card accent-{% if t.survey_type == 'inbound' %}blue{% else %}green{% endif %}">
+        <div class="stat-icon">{% if t.survey_type == 'inbound' %}🛬{% else %}🛫{% endif %}</div>
+        <div class="stat-label">{% if t.survey_type == 'inbound' %}Inbound{% else %}Outbound{% endif %}</div>
+        <div class="stat-value">{{ t.c|intcomma }}</div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="dash-section">
+    <h2>📈 So'nggi 30 kun dinamikasi</h2>
+    <div class="chart-wrap"><canvas id="dailyChart"></canvas></div>
+  </div>
+
+  <div class="dash-grid-2">
+    <div class="dash-section">
+      <h2>🏢 Bo'limlar bo'yicha (TOP 20)</h2>
+      {% if by_office %}
+      <div class="table-scroll">
+      <table class="dt">
+        <thead><tr><th>Kod</th><th>Bo'lim</th><th style="text-align:right">Soni</th></tr></thead>
+        <tbody>
+          {% for o in by_office %}
+            <tr>
+              <td><strong>{{ o.postal_office__code }}</strong></td>
+              <td>{{ o.postal_office__name }}</td>
+              <td style="text-align:right">{{ o.c|intcomma }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% else %}<div class="empty-state">Ma'lumot yo'q</div>{% endif %}
+    </div>
+
+    <div class="dash-section">
+      <h2>👤 Eng faol xodimlar (TOP 20)</h2>
+      {% if by_staff %}
+      <div class="table-scroll">
+      <table class="dt">
+        <thead><tr><th>Xodim</th><th style="text-align:right">Soni</th></tr></thead>
+        <tbody>
+          {% for s in by_staff %}
+            <tr>
+              <td>{{ s.staff__first_name }} {{ s.staff__last_name }} <small style="color:#888">({{ s.staff__username }})</small></td>
+              <td style="text-align:right">{{ s.c|intcomma }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% else %}<div class="empty-state">Ma'lumot yo'q</div>{% endif %}
+    </div>
+  </div>
+
+  <div class="dash-grid-2">
+    <div class="dash-section">
+      <h2>🌍 Davlatlar bo'yicha (TOP 15)</h2>
+      {% if by_country %}
+        <div class="chart-wrap"><canvas id="countryChart"></canvas></div>
+      {% else %}<div class="empty-state">Ma'lumot yo'q</div>{% endif %}
+    </div>
+    <div class="dash-section">
+      <h2>🎯 Tashrif maqsadi</h2>
+      {% if by_purpose %}
+      <div class="table-scroll">
+      <table class="dt">
+        <thead><tr><th>Maqsad</th><th style="text-align:right">Soni</th></tr></thead>
+        <tbody>
+          {% for p in by_purpose %}
+            <tr>
+              <td>{{ p.purpose|capfirst }}</td>
+              <td style="text-align:right">{{ p.c|intcomma }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% else %}<div class="empty-state">Ma'lumot yo'q</div>{% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+window.CHART_DATA = {
+  daily: { labels: {{ chart_labels|safe }}, values: {{ chart_values|safe }} },
+  countries: {
+    labels: [{% for c in by_country %}"{{ c.country|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}],
+    values: [{% for c in by_country %}{{ c.c }}{% if not forloop.last %},{% endif %}{% endfor %}]
+  }
+};
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  var d = window.CHART_DATA || {};
+
+  var ctx1 = document.getElementById('dailyChart');
+  if (ctx1 && d.daily) {
+    new Chart(ctx1, {
+      type: 'line',
+      data: {
+        labels: d.daily.labels,
+        datasets: [{
+          label: "So'rovnomalar", data: d.daily.values,
+          borderColor: '#1a5fa8', backgroundColor: 'rgba(26,95,168,.15)',
+          fill: true, tension: .3, pointRadius: 4, borderWidth: 2,
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+      }
+    });
+  }
+
+  var ctx2 = document.getElementById('countryChart');
+  if (ctx2 && d.countries && d.countries.labels.length) {
+    new Chart(ctx2, {
+      type: 'doughnut',
+      data: {
+        labels: d.countries.labels,
+        datasets: [{
+          data: d.countries.values,
+          backgroundColor: ['#1a5fa8', '#27ae60', '#f39c12', '#c0392b', '#9b59b6', '#16a085', '#e67e22', '#2c3e50', '#7f8c8d', '#3498db', '#e74c3c', '#1abc9c', '#34495e', '#f1c40f', '#8e44ad'],
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } } }
+      }
+    });
+  }
+})();
+</script>
+{% endblock %}

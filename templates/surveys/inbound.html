@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inbound Tourism Survey{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/inbound.css' %}">
+{% endblock %}
+
+{% block body %}
+{% if is_staff_view %}
+<div class="staff-bar">
+  <div class="sb-left">
+    <span class="sb-logo">📋 STAFF MODE</span>
+    <span class="sb-meta">Bo'lim: <strong>{% if staff_postal_office %}{{ staff_postal_office.code }} — {{ staff_postal_office.name }}{% else %}—{% endif %}</strong></span>
+    <span class="sb-meta">Xodim: <strong>{{ staff_full_name }}</strong></span>
+  </div>
+  <div class="sb-right">
+    <a href="{% url 'dashboard:index' %}">📊 Dashboard</a>
+    <a href="{% url 'staff_surveys:outbound' %}">↔ Outbound</a>
+    <a href="{% url 'accounts:logout' %}" class="sb-logout">Chiqish</a>
+  </div>
+</div>
+{% endif %}
+
+<div class="bg-circles"><div class="bg-circle"></div><div class="bg-circle"></div><div class="bg-circle"></div><div class="bg-circle"></div><div class="bg-circle"></div></div>
+
+<div class="container-center">
+  <div class="pages">
+
+    <!-- LANG / WELCOME -->
+    <div class="page active" id="page-lang">
+      <div class="card"><div class="lang-card">
+        <div class="lang-tabs">
+          <button class="lang-tab active" onclick="setLang('en')" id="tab-en"><span class="lang-code">EN</span> English</button>
+          <button class="lang-tab" onclick="setLang('ru')" id="tab-ru"><span class="lang-code">RU</span> Русский</button>
+        </div>
+        <div class="welcome-box">
+          <div class="welcome-title" id="wlc-title">DEAR TRAVELER,</div>
+          <p class="welcome-text" id="wlc-text">We kindly ask you to participate in this survey, which is carried out to study tourism development and compile the tourism satellite account of Uzbekistan. We ask you to assist us by answering all questions included in this questionnaire.</p>
+          <p class="welcome-conf" id="wlc-conf">Confidentiality of your responses is guaranteed by the Law of the Republic of Uzbekistan "On Official Statistics".</p>
+        </div>
+        <button class="btn-start" id="btn-start" onclick="startSurvey()">START</button>
+      </div></div>
+    </div>
+
+    <!-- SURVEY -->
+    <div class="page" id="page-survey">
+      <div class="card">
+        <div class="survey-header">
+          <div class="survey-type-label">INBOUND TOURISM</div>
+          <div class="progress-wrap">
+            <div class="prog-bg"><div class="prog-fill" id="prog-fill" style="width:5%"></div></div>
+            <div class="prog-lbl" id="prog-lbl">1 / 19</div>
+          </div>
+        </div>
+        <div class="survey-body" id="survey-body"></div>
+        <div class="val-err" id="val-err">Please select or enter an answer.</div>
+        <div class="survey-nav">
+          <button class="btn-prev" id="btn-prev" onclick="prevQ()">← Back</button>
+          <button class="btn-next" id="btn-next" onclick="nextQ()">Next →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENDED (Uzbekistan citizen) -->
+    <div class="page" id="page-ended">
+      <div class="card"><div class="end-card">
+        <div class="end-icon">🚫</div>
+        <h2 class="end-title">Survey completed</h2>
+        <p class="end-sub">This survey is not intended for citizens of Uzbekistan. Thank you for your participation!</p>
+        <button class="btn-restart" onclick="window.location.href='{% url 'home' %}'">Back to home</button>
+      </div></div>
+    </div>
+
+    <!-- SUCCESS -->
+    <div class="page" id="page-success">
+      <div class="card"><div class="end-card">
+        <div class="end-icon">✅</div>
+        <h2 class="end-title">Thank you!</h2>
+        <p class="end-sub">Your answers have been successfully saved. We greatly appreciate your participation.</p>
+        <button class="btn-restart" onclick="window.location.href='{% url 'home' %}'">Back to home</button>
+        {% if is_staff_view %}
+        <button class="btn-restart" style="background: var(--green); margin-left: 10px;" onclick="window.location.reload()">+ Yangi so'rovnoma</button>
+        {% endif %}
+      </div></div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  window.SURVEY_CONFIG = {
+    submitUrl: "{{ submit_url }}",
+    csrfToken: "{{ csrf_token }}",
+    isStaffView: {% if is_staff_view %}true{% else %}false{% endif %},
+    homeUrl: "{% url 'home' %}",
+  };
+</script>
+<script src="{% static 'js/inbound.js' %}"></script>
+{% endblock %}

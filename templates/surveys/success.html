@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Rahmat!{% endblock %}
+
+{% block extra_css %}
+<style>
+  .end-pages { width: 100%; max-width: 520px; }
+  .end-card { padding: 48px 30px; text-align: center; }
+  .end-icon { font-size: 56px; margin-bottom: 18px; }
+  .end-title { font-size: 24px; font-weight: 900; color: var(--navy); margin-bottom: 12px; }
+  .end-sub { color: var(--muted); font-size: 14px; line-height: 1.6; margin-bottom: 28px; }
+  .end-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="bg-circles"><div class="bg-circle"></div><div class="bg-circle"></div><div class="bg-circle"></div><div class="bg-circle"></div><div class="bg-circle"></div></div>
+
+<div class="container-center">
+  <div class="end-pages">
+    <div class="card">
+      <div class="end-card">
+        <div class="end-icon">✅</div>
+        <h2 class="end-title">Rahmat!</h2>
+        <p class="end-sub">
+          Javoblaringiz muvaffaqiyatli saqlandi.<br>
+          Ishtirokingiz uchun tashakkur bildiramiz!
+        </p>
+        <div class="end-actions">
+          <a href="{% url 'home' %}" class="btn-primary">🏠 Bosh sahifa</a>
+          {% if user.is_authenticated %}
+            <a href="{% url 'dashboard:index' %}" class="btn-secondary">📊 Dashboard</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

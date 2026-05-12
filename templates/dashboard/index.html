@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Dashboard — {{ staff_full_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block body %}
+<div class="staff-bar">
+  <div class="sb-left">
+    <span class="sb-logo">📊 DASHBOARD</span>
+    <span class="sb-meta">Bo'lim: <strong>{% if staff_postal_office %}{{ staff_postal_office.code }} — {{ staff_postal_office.name }}{% else %}—{% endif %}</strong></span>
+    <span class="sb-meta">Xodim: <strong>{{ staff_full_name }}</strong></span>
+  </div>
+  <div class="sb-right">
+    {% if user.is_superuser %}
+      <a href="{% url 'dashboard:admin_reports' %}">📈 Hisobotlar</a>
+      <a href="{% url 'admin:index' %}">⚙ Admin panel</a>
+    {% endif %}
+    <a href="{% url 'home' %}">🏠 Bosh sahifa</a>
+    <a href="{% url 'accounts:logout' %}" class="sb-logout">Chiqish</a>
+  </div>
+</div>
+
+<div class="dash-wrap">
+  <div class="dash-h">
+    <div>
+      <div class="breadcrumb">Statistika qo'mitasi · Turizm so'rovnoma</div>
+      <h1>Salom, {{ staff_full_name }}! 👋</h1>
+    </div>
+  </div>
+
+  <!-- Yangi so'rovnoma kiritish tugmalari -->
+  <div class="actions-row">
+    <a href="{% url 'staff_surveys:inbound' %}" class="action-card">
+      <div class="ac-icon">🛬</div>
+      <div class="ac-text">
+        <div class="ac-title">Inbound so'rovnoma</div>
+        <div class="ac-sub">Xorijiy turist uchun (EN/RU)</div>
+      </div>
+    </a>
+    <a href="{% url 'staff_surveys:outbound' %}" class="action-card green">
+      <div class="ac-icon">🛫</div>
+      <div class="ac-text">
+        <div class="ac-title">Outbound so'rovnoma</div>
+        <div class="ac-sub">O'zbek fuqarosi uchun (UZ/RU)</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Statistika kartochkalari -->
+  <div class="cards-grid">
+    <div class="stat-card accent-blue">
+      <div class="stat-icon">📅</div>
+      <div class="stat-label">Bugun</div>
+      <div class="stat-value">{{ today_count|default:0 }}</div>
+    </div>
+    <div class="stat-card accent-yellow">
+      <div class="stat-icon">📆</div>
+      <div class="stat-label">Bu hafta</div>
+      <div class="stat-value">{{ week_count|default:0 }}</div>
+    </div>
+    <div class="stat-card accent-green">
+      <div class="stat-icon">🗓</div>
+      <div class="stat-label">Bu oy</div>
+      <div class="stat-value">{{ month_count|default:0 }}</div>
+    </div>
+    <div class="stat-card accent-navy">
+      <div class="stat-icon">📊</div>
+      <div class="stat-label">Jami</div>
+      <div class="stat-value">{{ total_count|default:0 }}</div>
+    </div>
+    <div class="stat-card accent-blue">
+      <div class="stat-icon">🛬</div>
+      <div class="stat-label">Inbound</div>
+      <div class="stat-value">{{ inbound_count|default:0 }}</div>
+    </div>
+    <div class="stat-card accent-green">
+      <div class="stat-icon">🛫</div>
+      <div class="stat-label">Outbound</div>
+      <div class="stat-value">{{ outbound_count|default:0 }}</div>
+    </div>
+  </div>
+
+  <div class="dash-grid-2">
+    <!-- Grafik -->
+    <div class="dash-section">
+      <h2>📈 So'nggi 14 kun dinamikasi</h2>
+      <div class="section-sub">Kunlik to'ldirilgan so'rovnomalar soni</div>
+      <div class="chart-wrap">
+        <canvas id="dailyChart"></canvas>
+      </div>
+    </div>
+
+    <!-- So'nggi javoblar -->
+    <div class="dash-section">
+      <h2>🕒 So'nggi javoblar</h2>
+      <div class="section-sub">Oxirgi 10 ta yozuv</div>
+      {% if recent %}
+      <div class="table-scroll">
+      <table class="dt">
+        <thead>
+          <tr>
+            <th>Vaqt</th>
+            <th>Tur</th>
+            <th>Davlat</th>
+            {% if is_superuser_view %}<th>Xodim</th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in recent %}
+          <tr>
+            <td>{{ r.started_at|date:"d.m H:i" }}</td>
+            <td>
+              {% if r.survey_type == 'inbound' %}
+                <span class="badge badge-inbound">Inbound</span>
+              {% else %}
+                <span class="badge badge-outbound">Outbound</span>
+              {% endif %}
+            </td>
+            <td>{{ r.country|default:"—" }}</td>
+            {% if is_superuser_view %}
+              <td>
+                {% if r.staff %}
+                  {{ r.staff.get_full_name|default:r.staff.username }}
+                {% else %}
+                  <span class="badge badge-public">Self</span>
+                {% endif %}
+              </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% else %}
+        <div class="empty-state">📭 Hozircha yozuv yo'q. Yangi so'rovnoma kiritishni boshlang!</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+  var ctx = document.getElementById('dailyChart');
+  if (!ctx) return;
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: {{ chart_labels|safe }},
+      datasets: [{
+        label: "So'rovnomalar",
+        data: {{ chart_values|safe }},
+        backgroundColor: 'rgba(26,95,168,0.7)',
+        borderColor: '#0f3a6e',
+        borderWidth: 1,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { precision: 0 } }
+      }
+    }
+  });
+})();
+</script>
+{% endblock %}

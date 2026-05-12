@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Turizm so'rovnoma — Bosh sahifa{% endblock %}
+
+{% block extra_css %}
+<style>
+  .home-pages { width: 100%; max-width: 560px; }
+  .home-header {
+    background: var(--navy);
+    text-align: center;
+    padding: 13px 24px;
+    border-radius: 50px;
+    margin: 0 18px 24px;
+    color: #fff;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .home-body { padding: 28px 30px 34px; }
+  .home-title {
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--navy);
+    line-height: 1.1;
+    margin-bottom: 10px;
+  }
+  .home-sub { color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+  .btn-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 18px 22px;
+    border-radius: 18px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: 1px;
+    transition: transform .15s, box-shadow .15s;
+    margin-bottom: 12px;
+    text-decoration: none;
+  }
+  .btn-main:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(26,95,168,.28); text-decoration: none; }
+  .btn-inbound { background: var(--blue); color: #fff; box-shadow: 0 4px 16px rgba(26,95,168,.25); }
+  .btn-outbound { background: transparent; color: var(--text); border: 2px solid #d0dde8; }
+  .btn-staff {
+    background: var(--navy);
+    color: #fff;
+    margin-top: 20px;
+    box-shadow: 0 4px 16px rgba(15,58,110,.25);
+    font-size: 13px;
+  }
+  .home-note { text-align: center; color: var(--muted); font-size: 12px; margin-top: 18px; }
+  .divider { height: 1px; background: #e0eaf5; margin: 22px 0; }
+  @media(max-width:500px) {
+    .home-title { font-size: 28px; }
+    .home-body { padding: 22px 18px 28px; }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="bg-circles"><div class="bg-circle"></div><div class="bg-circle"></div><div class="bg-circle"></div><div class="bg-circle"></div><div class="bg-circle"></div></div>
+
+<div class="container-center">
+  <div class="home-pages">
+    <div class="home-header">🇺🇿 &nbsp;UZBEKISTAN TOURISM SURVEY</div>
+    <div class="card">
+      <div class="home-body">
+        <h1 class="home-title">Turizm<br>so'rovnomasi</h1>
+        <p class="home-sub">Iltimos, sizga mos so'rovnomani tanlang</p>
+
+        <a href="{% url 'public_inbound:start' %}" class="btn-main btn-inbound">
+          <span>🛬 INBOUND TOURISM<br><small style="font-weight:600;font-size:11px;opacity:.85;">Xorijiy turistlar uchun</small></span>
+          <span>→</span>
+        </a>
+        <a href="{% url 'public_outbound:start' %}" class="btn-main btn-outbound">
+          <span>🛫 OUTBOUND TOURISM<br><small style="font-weight:600;font-size:11px;opacity:.7;">O'zbekiston fuqarolari uchun</small></span>
+          <span style="transform:rotate(-45deg)">↗</span>
+        </a>
+
+        <p class="home-note">⏱ Taxminan 5–7 daqiqa vaqt oladi</p>
+
+        <div class="divider"></div>
+
+        {% if user.is_authenticated %}
+          <a href="{% url 'dashboard:index' %}" class="btn-main btn-staff">
+            <span>📊 Dashboard'ga kirish</span><span>→</span>
+          </a>
+        {% else %}
+          <a href="{% url 'accounts:login' %}" class="btn-main btn-staff">
+            <span>🔐 Xodim kabinetiga kirish</span><span>→</span>
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
