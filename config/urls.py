@@ -1,3 +1,5 @@
+import os
+
 from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
@@ -11,8 +13,12 @@ def healthcheck(request):
     return JsonResponse({'status': 'ok', 'service': 'turizm-survey'})
 
 
+admin_url = os.getenv('ADMIN_URL', 'admin/')
+if not admin_url.endswith('/'):
+    admin_url += '/'
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path(admin_url, admin.site.urls),
 
     # Serve favicon from static files to avoid 404 noise
     path('favicon.ico', RedirectView.as_view(url='/static/favicon.ico', permanent=False), name='favicon'),

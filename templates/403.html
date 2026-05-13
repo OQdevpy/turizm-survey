@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}403 — Ruxsat yo'q{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/error.css' %}">
+{% endblock %}
+
+{% block body %}
+<section class="error-page">
+  <div class="error-shell">
+    <div class="error-card">
+      <div>
+        <div class="error-code">403</div>
+        <div class="error-title">Ruxsat yo'q</div>
+        <div class="error-sub">
+          Ushbu sahifaga kirish uchun sizda yetarli huquq yo'q.
+        </div>
+        <div class="error-actions">
+          {% if user.is_authenticated and user.is_staff %}
+            <a class="err-btn err-btn-primary" href="/">🏠 Bosh sahifa</a>
+            <a class="err-btn err-btn-outline" href="/staff/">📊 Dashboard</a>
+          {% else %}
+            <a class="err-btn err-btn-primary" href="/inbound/">🛬 Inbound</a>
+            <a class="err-btn err-btn-outline" href="/outbound/">🛫 Outbound</a>
+          {% endif %}
+        </div>
+        <div class="error-details">Agar bu xatolik bo'lmasligi kerak bo'lsa, admin bilan bog'laning.</div>
+      </div>
+      <div class="error-panel">
+        <div class="panel-title">Maslahat</div>
+        <div class="panel-line">• Login qilganingizga ishonch hosil qiling</div>
+        <div class="panel-line">• Xodim profilingiz aktivligini tekshiring</div>
+        <div class="panel-line">• Ruxsatlar yangilanishi kerak bo'lishi mumkin</div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

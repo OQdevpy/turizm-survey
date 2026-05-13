@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}500 — Server xatosi{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/error.css' %}">
+{% endblock %}
+
+{% block body %}
+<section class="error-page">
+  <div class="error-shell">
+    <div class="error-card">
+      <div>
+        <div class="error-code">500</div>
+        <div class="error-title">Server vaqtincha ishlamayapti</div>
+        <div class="error-sub">
+          Ichki xatolik yuz berdi. Bir ozdan so'ng qayta urinib ko'ring.
+        </div>
+        <div class="error-actions">
+          {% if user.is_authenticated and user.is_staff %}
+            <a class="err-btn err-btn-primary" href="/">🏠 Bosh sahifa</a>
+            <a class="err-btn err-btn-outline" href="/staff/">📊 Dashboard</a>
+          {% else %}
+            <a class="err-btn err-btn-primary" href="/inbound/">🛬 Inbound</a>
+            <a class="err-btn err-btn-outline" href="/outbound/">🛫 Outbound</a>
+          {% endif %}
+        </div>
+        <div class="error-details">Agar muammo davom etsa, texnik jamoaga xabar bering.</div>
+      </div>
+      <div class="error-panel">
+        <div class="panel-title">Holat</div>
+        <div class="panel-line">• Servis yuklanish jarayonida bo'lishi mumkin</div>
+        <div class="panel-line">• Tarmoqqa ulanish tekshiriladi</div>
+        <div class="panel-line">• Xatolik logga yozildi</div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

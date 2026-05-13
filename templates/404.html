@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}404 — Sahifa topilmadi{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/error.css' %}">
+{% endblock %}
+
+{% block body %}
+<section class="error-page">
+  <div class="error-shell">
+    <div class="error-card">
+      <div>
+        <div class="error-code">404</div>
+        <div class="error-title">Sahifa topilmadi</div>
+        <div class="error-sub">
+          Siz izlagan manzil mavjud emas yoki ko'chirilgan bo'lishi mumkin.
+        </div>
+        <div class="error-actions">
+          {% if user.is_authenticated and user.is_staff %}
+            <a class="err-btn err-btn-primary" href="/">🏠 Bosh sahifa</a>
+            <a class="err-btn err-btn-outline" href="/staff/">📊 Dashboard</a>
+          {% else %}
+            <a class="err-btn err-btn-primary" href="/inbound/">🛬 Inbound</a>
+            <a class="err-btn err-btn-outline" href="/outbound/">🛫 Outbound</a>
+          {% endif %}
+        </div>
+        <div class="error-details">So'rov qayta yuborilsa ham, manzil tekshirilsin.</div>
+      </div>
+      <div class="error-panel">
+        <div class="panel-title">Nima qilish mumkin</div>
+        <div class="panel-line">• URL to'g'riligini tekshiring</div>
+        <div class="panel-line">• Bosh sahifadan navigatsiya qiling</div>
+        <div class="panel-line">• Agar xatolik takrorlansa, admin bilan bog'laning</div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -77,14 +77,25 @@
         <h1 class="home-title">Turizm<br>so'rovnomasi</h1>
         <p class="home-sub">Iltimos, sizga mos so'rovnomani tanlang</p>
 
-        <a href="{% url 'public_inbound:start' %}" class="btn-main btn-inbound">
-          <span>🛬 INBOUND TOURISM<br><small style="font-weight:600;font-size:11px;opacity:.85;">Xorijiy turistlar uchun</small></span>
-          <span>→</span>
-        </a>
-        <a href="{% url 'public_outbound:start' %}" class="btn-main btn-outbound">
-          <span>🛫 OUTBOUND TOURISM<br><small style="font-weight:600;font-size:11px;opacity:.7;">O'zbekiston fuqarolari uchun</small></span>
-          <span style="transform:rotate(-45deg)">↗</span>
-        </a>
+        {% if user.is_authenticated and user.is_staff %}
+          <a href="{% url 'home' %}" class="btn-main btn-inbound">
+            <span>🏠 Bosh sahifa<br><small style="font-weight:600;font-size:11px;opacity:.85;">Asosiy sahifaga qaytish</small></span>
+            <span>→</span>
+          </a>
+          <a href="{% url 'dashboard:index' %}" class="btn-main btn-outbound">
+            <span>📊 Dashboard<br><small style="font-weight:600;font-size:11px;opacity:.7;">Xodimlar paneli</small></span>
+            <span style="transform:rotate(-45deg)">↗</span>
+          </a>
+        {% else %}
+          <a href="{% url 'public_inbound:start' %}" class="btn-main btn-inbound">
+            <span>🛬 INBOUND TOURISM<br><small style="font-weight:600;font-size:11px;opacity:.85;">Xorijiy turistlar uchun</small></span>
+            <span>→</span>
+          </a>
+          <a href="{% url 'public_outbound:start' %}" class="btn-main btn-outbound">
+            <span>🛫 OUTBOUND TOURISM<br><small style="font-weight:600;font-size:11px;opacity:.7;">O'zbekiston fuqarolari uchun</small></span>
+            <span style="transform:rotate(-45deg)">↗</span>
+          </a>
+        {% endif %}
 
         <p class="home-note">⏱ Taxminan 5–7 daqiqa vaqt oladi</p>
 

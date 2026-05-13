@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}400 — Noto'g'ri so'rov{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/error.css' %}">
+{% endblock %}
+
+{% block body %}
+<section class="error-page">
+  <div class="error-shell">
+    <div class="error-card">
+      <div>
+        <div class="error-code">400</div>
+        <div class="error-title">Noto'g'ri so'rov</div>
+        <div class="error-sub">
+          Brauzer noto'g'ri yoki to'liq bo'lmagan so'rov yubordi.
+        </div>
+        <div class="error-actions">
+          {% if user.is_authenticated and user.is_staff %}
+            <a class="err-btn err-btn-primary" href="/">🏠 Bosh sahifa</a>
+            <a class="err-btn err-btn-outline" href="/staff/">📊 Dashboard</a>
+          {% else %}
+            <a class="err-btn err-btn-primary" href="/inbound/">🛬 Inbound</a>
+            <a class="err-btn err-btn-outline" href="/outbound/">🛫 Outbound</a>
+          {% endif %}
+        </div>
+        <div class="error-details">Formani qayta yuborishda maydonlarni tekshiring.</div>
+      </div>
+      <div class="error-panel">
+        <div class="panel-title">Maslahat</div>
+        <div class="panel-line">• So'rovni yangilab yuboring</div>
+        <div class="panel-line">• Forma maydonlari to'liq to'ldirilganiga ishonch hosil qiling</div>
+        <div class="panel-line">• Tizimga qayta kirib ko'ring</div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
