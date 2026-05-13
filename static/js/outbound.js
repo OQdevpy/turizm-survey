@@ -660,6 +660,39 @@
     nextBtn.disabled = true;
     nextBtn.innerText = T[currentLang].gps_acquiring;
 
+    // Public (non-staff) submissions: GPS is optional
+    if (!CFG.isStaffView) {
+      nextBtn.innerText = T[currentLang].submitting;
+      fetch(CFG.submitUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': CFG.csrfToken,
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          answers: answers,
+          language: currentLang,
+          location: null,
+        }),
+      }).then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      }).then(function (data) {
+        if (data && data.ok) {
+          clearState();
+          document.querySelectorAll('.page').forEach(function (p) { p.classList.remove('active'); });
+          document.getElementById('page-success').classList.add('active');
+        } else { throw new Error('Server error'); }
+      }).catch(function () {
+        submitted = false;
+        nextBtn.disabled = false;
+        nextBtn.innerText = T[currentLang].finish;
+        showErr(T[currentLang].submit_error);
+      });
+      return;
+    }
+
     if (!('geolocation' in navigator)) {
       submitted = false;
       nextBtn.disabled = false;
