@@ -3,7 +3,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
 from django.urls import path, include
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, RedirectView
 
 
 def healthcheck(request):
@@ -13,6 +13,9 @@ def healthcheck(request):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    # Serve favicon from static files to avoid 404 noise
+    path('favicon.ico', RedirectView.as_view(url='/static/favicon.ico', permanent=False), name='favicon'),
 
     # Keep-alive endpoint (UptimeRobot uchun)
     path('healthz/', healthcheck, name='healthcheck'),
