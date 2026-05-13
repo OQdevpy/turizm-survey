@@ -48,9 +48,9 @@ TEMPLATES = [
             'context_processors': [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
-                'django.template.context_processors.i18n',
-                'django.template.context_processors.static',
-                'django.template.context_processors.tz',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+                'dashboard.context_processors.staff_context',
             ],
         },
     },
@@ -75,9 +75,12 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
 ]
 
-# Ensure LANGUAGE_CODE is defined
-LANGUAGE_CODE = 'en-us'
-
+LANGUAGE_CODE = 'uz'
+LANGUAGES = [
+    ('uz', "O'zbekcha"),
+    ('ru', 'Русский'),
+    ('en', 'English'),
+]
 TIME_ZONE = 'Asia/Tashkent'
 USE_I18N = True
 USE_TZ = True

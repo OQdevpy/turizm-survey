@@ -3,7 +3,6 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
-from django.conf import settings
 
 from .forms import StaffLoginForm
 
@@ -27,11 +26,7 @@ def staff_login(request):
     else:
         form = StaffLoginForm(request)
 
-    context = {
-        'form': form,
-        'LANGUAGE_CODE': settings.LANGUAGE_CODE,
-    }
-    return render(request, 'accounts/login.html', context)
+    return render(request, 'accounts/login.html', {'form': form})
 
 
 @login_required

@@ -10,7 +10,6 @@ from django.views.decorators.http import require_http_methods, require_POST
 from accounts.decorators import staff_required
 
 from .models import SurveyResponse
-from django.conf import settings
 
 
 def _client_ip(request):
