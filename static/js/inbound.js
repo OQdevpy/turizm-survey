@@ -422,6 +422,8 @@
 
   function setLang(lang) {
     if (!T[lang]) lang = 'en'; // fallback
+    // Staff rejimida — faqat EN/RU
+    if (CFG.isStaffView && lang !== 'en' && lang !== 'ru') lang = 'en';
     currentLang = lang;
     document.querySelectorAll('.lang-tab').forEach(function (t) { t.classList.remove('active'); });
     var tab = document.getElementById('tab-' + lang);
