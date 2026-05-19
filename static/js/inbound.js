@@ -17,7 +17,7 @@
   // ============ SESSION STORAGE (avto-saqlash) ============
   // Sahifa yangilansa — savol va javoblar saqlanadi
   // Faqat sahifa yopilganda yo'qoladi (sessionStorage)
-  var STORAGE_KEY = 'tourism_inbound_state_v1';
+  var STORAGE_KEY = 'tourism_inbound_state_v2';
 
   function saveState() {
     try {
@@ -62,54 +62,56 @@
     'Venezuela','Vietnam','Yemen','Other'
   ];
   var CURRENCIES = ['USD','EUR','UZS','RUB','GBP','CNY','KZT','CHF','JPY','AED','Other'];
-  var PLACES_EN = ['Tashkent','Samarkand','Bukhara','Khiva','Shakhrisabz','Termez','Kokand','Fergana','Namangan','Andijan','Nukus','Urgench','Other'];
-  var PLACES_RU = ['Ташкент','Самарканд','Бухара','Хива','Шахрисабз','Термез','Коканд','Фергана','Наманган','Андижан','Нукус','Ургенч','Другое'];
+
+  // 9 til uchun shahar ro'yxati
+  var PLACES = {
+    en: ['Tashkent','Samarkand','Bukhara','Khiva','Shakhrisabz','Termez','Kokand','Fergana','Namangan','Andijan','Nukus','Urgench','Other'],
+    ru: ['Ташкент','Самарканд','Бухара','Хива','Шахрисабз','Термез','Коканд','Фергана','Наманган','Андижан','Нукус','Ургенч','Другое'],
+    ar: ['طشقند','سمرقند','بخارى','خيوة','شهرسبز','ترمذ','قوقند','فرغانة','نمنگان','أنديجان','نوكوس','أورغنش','أخرى'],
+    zh: ['塔什干','撒马尔罕','布哈拉','希瓦','沙赫里萨布兹','铁尔梅兹','浩罕','费尔干纳','纳曼干','安集延','努库斯','乌尔根奇','其他'],
+    fr: ['Tachkent','Samarcande','Boukhara','Khiva','Chakhrisabz','Termez','Kokand','Fergana','Namangan','Andijan','Noukous','Ourguentch','Autre'],
+    de: ['Taschkent','Samarkand','Buchara','Chiwa','Schahrisabs','Termez','Kokand','Fergana','Namangan','Andischan','Nukus','Urgentsch','Anderes'],
+    it: ['Tashkent','Samarcanda','Bukhara','Khiva','Shahrisabz','Termez','Kokand','Fergana','Namangan','Andijan','Nukus','Urgench','Altro'],
+    es: ['Taskent','Samarcanda','Bujará','Jiva','Shahrisabz','Termez','Kokand','Fergana','Namangan','Andiyán','Nukus','Urgench','Otro'],
+    tg: ['Тошканд','Самарқанд','Бухоро','Хива','Шаҳрисабз','Термиз','Қӯқанд','Фарғона','Наманган','Андиҷон','Нукус','Урганч','Дигар'],
+  };
+  // Eski kod uchun moslashuv (PLACES_EN/PLACES_RU referenslarini saqlash)
+  var PLACES_EN = PLACES.en;
+  var PLACES_RU = PLACES.ru;
+  function getPlaces() { return PLACES[currentLang] || PLACES.en; }
 
   var EXP_ROWS = [
-    {n:1, en:'Accommodation (payment only for the room)', ru:'Проживание (оплата только за номер)'},
-    {n:2, en:'Food and drinks', ru:'Еда и напитки'},
-    {n:3, en:'International transportation', ru:'Международный транспорт'},
-    {n:4, en:'Transport (only within Uzbekistan)', ru:'Транспорт (только в пределах Узбекистана)'},
-    {n:5, en:'Cultural services (entrance fees to museums, performances, films)', ru:'Культурные услуги (входные билеты, музеи, спектакли)'},
-    {n:6, en:'Sport services, entertainment and recreation', ru:'Спортивные услуги, развлечения и отдых'},
-    {n:7, en:'Educational expenses', ru:'Расходы на образование'},
-    {n:8, en:'Tourism services within Uzbekistan (additional package tours)', ru:'Туристические услуги внутри Узбекистана (доп. турпакеты)'},
-    {n:9, en:'Medical services (sanatoriums, health resorts)', ru:'Медицинские услуги (санатории, курорты)'},
-    {n:10, en:'Fueling and maintenance of own motor transport', ru:'Топливо и обслуживание личного автотранспорта'},
-    {n:11, en:'Purchasing of valuables (precious metals, stones, jewelry, art)', ru:'Покупка ценностей (драгметаллы, камни, ювелирка, искусство)'},
-    {n:12, en:'Shops (souvenirs, clothes, other consumer goods)', ru:'Магазины (сувениры, одежда, потребительские товары)'},
-    {n:13, en:'The value of goods purchased for resale abroad', ru:'Стоимость товаров, купленных для перепродажи за рубежом', mand:true},
-    {n:14, en:'Other expenses', ru:'Прочие расходы'}
+    {n:1, en:'Accommodation (payment only for the room)', ru:'Проживание (оплата только за номер)', ar:'الإقامة (الغرفة فقط)', zh:'住宿（仅房费）', fr:'Hébergement (chambre uniquement)', de:'Unterkunft (nur Zimmer)', it:'Alloggio (solo camera)', es:'Alojamiento (solo habitación)', tg:'Ҷойгиршавӣ (танҳо ҳуҷра)'},
+    {n:2, en:'Food and drinks', ru:'Еда и напитки', ar:'الطعام والمشروبات', zh:'食品和饮料', fr:'Nourriture et boissons', de:'Speisen und Getränke', it:'Cibo e bevande', es:'Alimentos y bebidas', tg:'Хӯрок ва нӯшокиҳо'},
+    {n:3, en:'International transportation', ru:'Международный транспорт', ar:'النقل الدولي', zh:'国际交通', fr:'Transport international', de:'Internationaler Verkehr', it:'Trasporto internazionale', es:'Transporte internacional', tg:'Нақлиёти байналмилалӣ'},
+    {n:4, en:'Transport (only within Uzbekistan)', ru:'Транспорт (только в пределах Узбекистана)', ar:'النقل المحلي', zh:'当地交通', fr:'Transport local', de:'Lokaler Verkehr', it:'Trasporto locale', es:'Transporte local', tg:'Нақлиёти маҳаллӣ'},
+    {n:5, en:'Cultural services (entrance fees to museums, performances, films)', ru:'Культурные услуги (входные билеты, музеи, спектакли)', ar:'الخدمات الثقافية', zh:'文化服务（博物馆、演出、电影门票）', fr:'Services culturels (entrées aux musées, spectacles, films)', de:'Kulturdienstleistungen', it:'Servizi culturali (ingressi a musei, spettacoli, film)', es:'Servicios culturales (entradas a museos, espectáculos, películas)', tg:'Хизматрасониҳои фарҳангӣ'},
+    {n:6, en:'Sport services, entertainment and recreation', ru:'Спортивные услуги, развлечения и отдых', ar:'الخدمات الرياضية والترفيه', zh:'体育服务、娱乐和休闲', fr:'Services sportifs, divertissement et loisirs', de:'Sport, Unterhaltung und Erholung', it:'Servizi sportivi, intrattenimento e svago', es:'Servicios deportivos, entretenimiento y recreación', tg:'Хизматрасониҳои варзишӣ, фароғат'},
+    {n:7, en:'Educational expenses', ru:'Расходы на образование', ar:'نفقات التعليم', zh:'教育支出', fr:"Dépenses d'éducation", de:'Bildungsausgaben', it:'Spese per istruzione', es:'Gastos educativos', tg:'Хароҷоти таҳсил'},
+    {n:8, en:'Tourism services within Uzbekistan (additional package tours)', ru:'Туристические услуги внутри Узбекистана (доп. турпакеты)', ar:'خدمات سياحية داخل أوزبكستان', zh:'乌兹别克斯坦境内旅游服务', fr:'Services touristiques en Ouzbékistan', de:'Tourismusdienstleistungen innerhalb Usbekistans', it:'Servizi turistici in Uzbekistan', es:'Servicios turísticos dentro de Uzbekistán', tg:'Хизматрасониҳои туристӣ дар Ӯзбекистон'},
+    {n:9, en:'Medical services (sanatoriums, health resorts)', ru:'Медицинские услуги (санатории, курорты)', ar:'الخدمات الطبية (مصحات ومنتجعات صحية)', zh:'医疗服务（疗养院、健康度假村）', fr:'Services médicaux (sanatoriums)', de:'Medizinische Dienstleistungen (Sanatorien)', it:'Servizi medici (sanatori, centri benessere)', es:'Servicios médicos (sanatorios)', tg:'Хизматрасониҳои тиббӣ (осоишгоҳҳо)'},
+    {n:10, en:'Fueling and maintenance of own motor transport', ru:'Топливо и обслуживание личного автотранспорта', ar:'الوقود والصيانة لمركبتك الخاصة', zh:'自有车辆的燃料和维修', fr:'Carburant et entretien du véhicule', de:'Kraftstoff und Wartung Fahrzeug', it:'Carburante e manutenzione veicolo', es:'Combustible y mantenimiento de su vehículo', tg:'Сӯзишворӣ ва нигоҳдории нақлиёти шахсӣ'},
+    {n:11, en:'Purchasing of valuables (precious metals, stones, jewelry, art)', ru:'Покупка ценностей (драгметаллы, камни, ювелирка, искусство)', ar:'شراء الأشياء الثمينة', zh:'购买贵重物品（贵金属和宝石、珠宝、艺术品）', fr:"Achat d'objets de valeur", de:'Kauf von Wertgegenständen', it:'Acquisto di oggetti di valore', es:'Compra de objetos de valor', tg:'Хариди ашёи қиматбаҳо'},
+    {n:12, en:'Shops (souvenirs, clothes, other consumer goods)', ru:'Магазины (сувениры, одежда, потребительские товары)', ar:'التسوق: هدايا تذكارية، ملابس', zh:'购物：纪念品、服装、其他消费品', fr:'Achats : souvenirs, vêtements', de:'Einkäufe: Souvenirs, Kleidung', it:'Shopping: souvenir, abbigliamento', es:'Compras: recuerdos, ropa', tg:'Харид: тӯҳфаҳо, либос'},
+    {n:13, en:'The value of goods purchased for resale abroad', ru:'Стоимость товаров, купленных для перепродажи за рубежом', ar:'قيمة السلع المشتراة لإعادة بيعها خارج أوزبكستان', zh:'为在乌兹别克斯坦境外转售而购买的商品价值', fr:"Valeur des biens achetés pour revente hors d'Ouzbékistan", de:'Wert der Waren zum Weiterverkauf außerhalb Usbekistans', it:"Valore dei beni per la rivendita fuori dall'Uzbekistan", es:'Valor de los bienes comprados para reventa fuera de Uzbekistán', tg:'Арзиши молҳои бозфурӯшӣ берун аз Ӯзбекистон', mand:true},
+    {n:14, en:'Other expenses', ru:'Прочие расходы', ar:'نفقات أخرى', zh:'其他支出', fr:'Autres dépenses', de:'Sonstige Ausgaben', it:'Altre spese', es:'Otros gastos', tg:'Дигар хароҷот'}
   ];
 
-  var RATING_EN = [
-    'International transport (Uzbek companies)',
-    'Passport control procedures at border crossing points',
-    'Hospitality',
-    'Value for money',
-    'Food',
-    'Cleanliness',
-    'Transport (within Uzbekistan)',
-    'Safety',
-    'Cultural and entertainment services',
-    'Accommodation',
-    'Health and medical services',
-    'Communication, Internet and Wi-Fi'
-  ];
-  var RATING_RU = [
-    'Международный транспорт (узбекские компании)',
-    'Процедуры паспортного контроля в пунктах пропуска через границу',
-    'Гостеприимство',
-    'Соотношение цены и качества',
-    'Питание',
-    'Чистота',
-    'Транспорт (в пределах Узбекистана)',
-    'Безопасность',
-    'Культурные и развлекательные услуги',
-    'Размещение',
-    'Оздоровительные и медицинские услуги',
-    'Связь, интернет и Wi-Fi'
-  ];
+  var RATING_LABELS = {
+    en: ['International transport (Uzbek companies)','Passport control procedures at border crossing points','Hospitality','Value for money','Food','Cleanliness','Transport (within Uzbekistan)','Safety','Cultural and entertainment services','Accommodation','Health and medical services','Communication, Internet and Wi-Fi'],
+    ru: ['Международный транспорт (узбекские компании)','Процедуры паспортного контроля в пунктах пропуска через границу','Гостеприимство','Соотношение цены и качества','Питание','Чистота','Транспорт (в пределах Узбекистана)','Безопасность','Культурные и развлекательные услуги','Размещение','Оздоровительные и медицинские услуги','Связь, интернет и Wi-Fi'],
+    ar: ['النقل الدولي (الشركات الأوزبكية)','إجراءات مراقبة الجوازات في نقاط الحدود الأوزبكية','حسن الضيافة','القيمة مقابل المال','الطعام','النظافة','النقل المحلي','السلامة والأمن','الخدمات الثقافية والترفيهية','الإقامة','الخدمات الصحية والطبية','خدمات الاتصالات والإنترنت'],
+    zh: ['国际交通（乌兹别克公司）','乌兹别克边境口岸护照检查程序','热情好客','性价比','食品','清洁度','当地交通','安全','文化和娱乐服务','住宿','健康和医疗服务','通信和互联网服务'],
+    fr: ['Transport international (entreprises ouzbèkes)','Procédures de contrôle des passeports aux points frontaliers ouzbeks','Hospitalité','Rapport qualité-prix','Nourriture','Propreté','Transport local','Sécurité','Services culturels et de divertissement','Hébergement','Services de santé et médicaux','Services de communication et Internet'],
+    de: ['Internationaler Verkehr (usbekische Unternehmen)','Passkontrollverfahren an usbekischen Grenzübergängen','Gastfreundschaft','Preis-Leistungs-Verhältnis','Essen','Sauberkeit','Lokaler Verkehr','Sicherheit','Kultur- und Unterhaltungsdienstleistungen','Unterkunft','Gesundheits- und medizinische Dienstleistungen','Kommunikations- und Internetdienste'],
+    it: ['Trasporto internazionale (compagnie uzbeke)','Procedure di controllo passaporti ai valichi di frontiera uzbeki','Ospitalità','Rapporto qualità-prezzo','Cibo','Pulizia','Trasporto locale','Sicurezza','Servizi culturali e di intrattenimento','Alloggio','Servizi sanitari e medici','Servizi di comunicazione e internet'],
+    es: ['Transporte internacional (empresas uzbekas)','Procedimientos de control de pasaportes en puntos fronterizos uzbekos','Hospitalidad','Relación calidad-precio','Comida','Limpieza','Transporte local','Seguridad','Servicios culturales y de entretenimiento','Alojamiento','Servicios de salud y médicos','Servicios de comunicación e internet'],
+    tg: ['Нақлиёти байналмилалӣ (ширкатҳои Ӯзбекистон)','Тартиби назорати шиноснома дар гузаргоҳҳои сарҳадии Ӯзбекистон','Меҳмоннавозӣ','Мутаносибии нарх ва сифат','Хӯрок','Тозагӣ','Нақлиёти маҳаллӣ','Бехатарӣ','Хизматрасониҳои фарҳангӣ ва фароғатӣ','Ҷойгиршавӣ','Хизматрасониҳои саломатӣ ва тиббӣ','Хизматрасониҳои алоқа ва интернет']
+  };
+  // Eski referenslar uchun
+  var RATING_EN = RATING_LABELS.en;
+  var RATING_RU = RATING_LABELS.ru;
+  function getRatingLabels() { return RATING_LABELS[currentLang] || RATING_LABELS.en; }
 
   // ==================== TRANSLATIONS ====================
   var T = {
@@ -160,18 +162,143 @@
       ended_sub: 'Данный опрос предназначен только для иностранных посетителей Узбекистана. Спасибо!',
       success_title: 'Спасибо!',
       success_sub: 'Ваши ответы успешно сохранены. Мы очень ценим ваше участие!'
+    },
+    ar: {
+      welcome_title: 'عزيزي المسافر،',
+      welcome_text: 'نرجو منكم المشاركة في هذا المسح، الذي يهدف إلى دراسة تطور السياحة وإعداد حساب السياحة الفرعي في أوزبكستان. نكون شاكرين لكم إذا تفضلتم بملء هذا الاستبيان.',
+      welcome_conf: 'تُضمن سرية إجاباتكم بموجب قانون جمهورية أوزبكستان «بشأن الإحصاءات الرسمية».',
+      start: 'ابدأ',
+      back: '→ رجوع', next: '→ التالي', finish: '✓ إنهاء',
+      submitting: 'جارٍ الحفظ…', submit_error: 'فشل الحفظ. حاول مرة أخرى.',
+      gps_required: 'إذن الموقع مطلوب لتقديم الاستبيان.',
+      gps_unsupported: 'متصفحك لا يدعم GPS.',
+      gps_acquiring: 'جارٍ الحصول على GPS…',
+      error: 'يرجى تحديد إجابة أو إدخالها قبل المتابعة.',
+      error_nights: 'يجب أن يساوي مجموع الليالي في المدن إجمالي الليالي في أوزبكستان.',
+      error_pkg_nights: 'يجب أن يكون إجمالي ليالي الباقة ≥ الليالي في أوزبكستان.',
+      error_row13: 'السطر 13 إلزامي (اخترت المعرض/شراء البضائع). يرجى إدخال المبلغ.',
+      q_of: 'السؤال', of: 'من', nights: 'ليلة', search: 'ابحث عن دولة...',
+      ended_title: 'اكتمل الاستطلاع', ended_sub: 'هذا الاستطلاع مخصص للزوار غير المقيمين في أوزبكستان فقط. شكراً لك!',
+      success_title: 'شكراً لك!', success_sub: 'تم تسجيل إجاباتك بنجاح. نحن نقدر وقتك ومشاركتك!'
+    },
+    zh: {
+      welcome_title: '尊敬的旅客：',
+      welcome_text: '我们诚请您参加本次调查。本调查旨在研究旅游业发展并编制乌兹别克斯坦旅游卫星账户。感谢您填写本问卷。',
+      welcome_conf: '根据乌兹别克斯坦共和国《官方统计法》，您的回答将予以保密。',
+      start: '开始',
+      back: '← 返回', next: '下一步 →', finish: '完成 ✓',
+      submitting: '正在保存…', submit_error: '保存失败，请重试。',
+      gps_required: '需要位置权限才能提交问卷。',
+      gps_unsupported: '您的浏览器不支持 GPS。',
+      gps_acquiring: '正在获取 GPS 位置…',
+      error: '请在继续之前选择或输入答案。',
+      error_nights: '各城市总住宿夜数必须等于在乌兹别克斯坦的总夜数。',
+      error_pkg_nights: '套餐总夜数必须≥在乌兹别克斯坦的夜数。',
+      error_row13: '第 13 行为必填项（您选择了展览/购买商品）。请输入金额。',
+      q_of: '问题', of: '共', nights: '晚', search: '搜索国家...',
+      ended_title: '问卷已完成', ended_sub: '本问卷仅面向乌兹别克斯坦的非居民访客。感谢您！',
+      success_title: '感谢您！', success_sub: '您的回答已成功记录。我们非常感谢您的参与！'
+    },
+    fr: {
+      welcome_title: 'CHÈRE VOYAGEUSE, CHER VOYAGEUR,',
+      welcome_text: "Nous vous prions de participer à cette enquête, menée afin d'étudier le développement du tourisme et d'établir le compte satellite du tourisme de l'Ouzbékistan. Nous vous remercions de bien vouloir remplir ce questionnaire.",
+      welcome_conf: "La confidentialité de vos réponses est garantie par la loi de la République d'Ouzbékistan « Sur les statistiques officielles ».",
+      start: 'COMMENCER',
+      back: '← Retour', next: 'Suivant →', finish: 'Terminer ✓',
+      submitting: 'Enregistrement…', submit_error: "Échec de l'enregistrement. Réessayez.",
+      gps_required: "L'autorisation de localisation est requise pour soumettre l'enquête.",
+      gps_unsupported: 'Votre navigateur ne prend pas en charge le GPS.',
+      gps_acquiring: 'Acquisition du GPS…',
+      error: 'Veuillez sélectionner ou saisir une réponse avant de continuer.',
+      error_nights: 'Le total des nuits dans les villes doit être égal au total des nuits en Ouzbékistan.',
+      error_pkg_nights: "Le total des nuits du forfait doit être ≥ aux nuits en Ouzbékistan.",
+      error_row13: 'La ligne 13 est obligatoire (exposition/achat de biens). Veuillez saisir un montant.',
+      q_of: 'Question', of: 'sur', nights: 'nuits', search: 'Rechercher un pays...',
+      ended_title: 'Enquête terminée', ended_sub: "Cette enquête est destinée aux visiteurs non-résidents en Ouzbékistan uniquement. Merci !",
+      success_title: 'Merci !', success_sub: 'Vos réponses ont été enregistrées avec succès. Nous apprécions votre participation !'
+    },
+    de: {
+      welcome_title: 'SEHR GEEHRTE REISENDE,',
+      welcome_text: 'Wir bitten Sie freundlich, an dieser Erhebung teilzunehmen. Sie dient der Untersuchung der Tourismusentwicklung und der Erstellung des Tourismus-Satellitenkontos Usbekistans. Wir wären Ihnen dankbar, wenn Sie diesen Fragebogen ausfüllen würden.',
+      welcome_conf: 'Die Vertraulichkeit Ihrer Antworten ist gemäß dem Gesetz der Republik Usbekistan „Über amtliche Statistik" gewährleistet.',
+      start: 'BEGINNEN',
+      back: '← Zurück', next: 'Weiter →', finish: 'Abschließen ✓',
+      submitting: 'Speichert…', submit_error: 'Speichern fehlgeschlagen. Bitte erneut versuchen.',
+      gps_required: 'Standortberechtigung erforderlich.',
+      gps_unsupported: 'Ihr Browser unterstützt kein GPS.',
+      gps_acquiring: 'GPS wird abgerufen…',
+      error: 'Bitte wählen oder geben Sie eine Antwort ein, bevor Sie fortfahren.',
+      error_nights: 'Die Gesamtnächte in den Städten müssen der Gesamtzahl der Nächte in Usbekistan entsprechen.',
+      error_pkg_nights: 'Die Gesamtnächte des Pakets müssen ≥ den Nächten in Usbekistan sein.',
+      error_row13: 'Zeile 13 ist Pflichtfeld (Ausstellung/Warenkauf gewählt). Bitte Betrag eingeben.',
+      q_of: 'Frage', of: 'von', nights: 'Nächte', search: 'Land suchen...',
+      ended_title: 'Umfrage abgeschlossen', ended_sub: 'Diese Umfrage richtet sich ausschließlich an nichtansässige Besucher Usbekistans. Vielen Dank!',
+      success_title: 'Vielen Dank!', success_sub: 'Ihre Antworten wurden erfolgreich gespeichert. Wir schätzen Ihre Teilnahme sehr!'
+    },
+    it: {
+      welcome_title: 'GENTILE VIAGGIATORE,',
+      welcome_text: "La invitiamo gentilmente a partecipare a questa indagine, svolta per studiare lo sviluppo del turismo e compilare il Conto satellite del turismo dell'Uzbekistan. Le saremmo grati se compilasse questo questionario.",
+      welcome_conf: 'La riservatezza delle Sue risposte è garantita dalla Legge della Repubblica dell\'Uzbekistan "Sulle statistiche ufficiali".',
+      start: 'INIZIA',
+      back: '← Indietro', next: 'Avanti →', finish: 'Completa ✓',
+      submitting: 'Salvataggio…', submit_error: 'Salvataggio non riuscito. Riprova.',
+      gps_required: 'Autorizzazione di localizzazione richiesta.',
+      gps_unsupported: 'Il tuo browser non supporta il GPS.',
+      gps_acquiring: 'Acquisizione GPS…',
+      error: 'Si prega di selezionare o inserire una risposta prima di continuare.',
+      error_nights: "Il totale delle notti nelle città deve essere uguale al totale delle notti in Uzbekistan.",
+      error_pkg_nights: 'Il totale delle notti del pacchetto deve essere ≥ alle notti in Uzbekistan.',
+      error_row13: 'La riga 13 è obbligatoria (fiera/acquisto merci). Inserire un importo.',
+      q_of: 'Domanda', of: 'di', nights: 'notti', search: 'Cerca paese...',
+      ended_title: 'Indagine completata', ended_sub: 'Questa indagine è destinata esclusivamente ai visitatori non residenti in Uzbekistan. Grazie!',
+      success_title: 'Grazie!', success_sub: 'Le Sue risposte sono state registrate con successo. Apprezziamo molto la Sua partecipazione!'
+    },
+    es: {
+      welcome_title: 'ESTIMADO/A VIAJERO/A:',
+      welcome_text: 'Le solicitamos amablemente participar en esta encuesta, que se realiza para estudiar el desarrollo del turismo y elaborar la Cuenta Satélite de Turismo de Uzbekistán. Le agradeceríamos que completara este cuestionario.',
+      welcome_conf: 'La confidencialidad de sus respuestas está garantizada por la Ley de la República de Uzbekistán "Sobre estadísticas oficiales".',
+      start: 'COMENZAR',
+      back: '← Atrás', next: 'Siguiente →', finish: 'Finalizar ✓',
+      submitting: 'Guardando…', submit_error: 'Error al guardar. Inténtelo de nuevo.',
+      gps_required: 'Se requiere permiso de ubicación para enviar la encuesta.',
+      gps_unsupported: 'Su navegador no admite GPS.',
+      gps_acquiring: 'Obteniendo GPS…',
+      error: 'Por favor, seleccione o ingrese una respuesta antes de continuar.',
+      error_nights: 'El total de noches en ciudades debe ser igual al total de noches en Uzbekistán.',
+      error_pkg_nights: 'El total de noches del paquete debe ser ≥ las noches en Uzbekistán.',
+      error_row13: 'La fila 13 es obligatoria (Exposición/compra de bienes). Ingrese un monto.',
+      q_of: 'Pregunta', of: 'de', nights: 'noches', search: 'Buscar país...',
+      ended_title: 'Encuesta completada', ended_sub: 'Esta encuesta está destinada únicamente a visitantes no residentes en Uzbekistán. ¡Gracias!',
+      success_title: '¡Gracias!', success_sub: '¡Sus respuestas han sido registradas con éxito. Agradecemos su participación!'
+    },
+    tg: {
+      welcome_title: 'МУСОФИРИ МУҲТАРАМ,',
+      welcome_text: 'Аз Шумо эҳтиромона хоҳиш менамоем, ки дар ин пурсиш иштирок кунед. Пурсиш барои омӯзиши рушди туризм ва тартиб додани ҳисоби ёрирасони туризми Ӯзбекистон гузаронида мешавад.',
+      welcome_conf: 'Махфияти ҷавобҳои Шумо тибқи Қонуни Ҷумҳурии Ӯзбекистон «Дар бораи омори расмӣ» кафолат дода мешавад.',
+      start: 'ОҒОЗ',
+      back: '← Бозгашт', next: 'Идома →', finish: 'Анҷом ✓',
+      submitting: 'Захира шуда истодааст…', submit_error: 'Захира карда нашуд. Бори дигар санҷед.',
+      gps_required: 'Барои фиристодан иҷозати ҷойгиршавӣ лозим аст.',
+      gps_unsupported: 'Браузери шумо GPS-ро дастгирӣ намекунад.',
+      gps_acquiring: 'GPS гирифта шуда истодааст…',
+      error: 'Лутфан пеш аз идома ҷавобро интихоб кунед ё ворид намоед.',
+      error_nights: 'Маҷмӯи шабҳо дар шаҳрҳо бояд ба маҷмӯи шабҳо дар Ӯзбекистон баробар бошад.',
+      error_pkg_nights: 'Маҷмӯи шабҳои турпакет бояд ≥ шабҳои дар Ӯзбекистон бошад.',
+      error_row13: 'Сатри 13 ҳатмӣ аст (намоишгоҳ/харидро интихоб кардед). Маблағро ворид кунед.',
+      q_of: 'Савол', of: 'аз', nights: 'шаб', search: 'Ҷустуҷӯи давлат...',
+      ended_title: 'Пурсиш анҷом ёфт', ended_sub: 'Ин пурсиш танҳо барои меҳмонони ғайрирезидент аст. Ташаккур!',
+      success_title: 'Ташаккур!', success_sub: 'Ҷавобҳои Шумо бомуваффақият сабт шуданд. Иштироки Шуморо қадр мекунем!'
     }
   };
 
-  // ==================== SCREENING TEXT ====================
+  // ==================== SCREENING TEXT (9 til) ====================
   var SC_TEXT = {
     en: {
       header: '🔍 Screening questions',
       F1: 'F1. Was your visit to Uzbekistan for less than 12 months?',
       F2: 'F2. Do you belong to one of the following categories: diplomat, consular officer, military service member, refugee, or transport crew member?',
       F3: 'F3. Is this visit related to your official duties?',
-      yes: 'Yes',
-      no: 'No',
+      yes: 'Yes', no: 'No',
       terminate: 'Thank you for your interest. Unfortunately, you are not eligible for this survey.',
       continueBtn: 'Continue to main survey →',
       back: 'Back to Home',
@@ -181,11 +308,80 @@
       F1: 'А. Продолжительность Вашего визита в Узбекистан составляет менее 12 месяцев?',
       F2: 'В. Относитесь ли Вы к одной из следующих категорий: дипломат, консульское должностное лицо, военнослужащий, беженец или член экипажа транспортного средства?',
       F3: 'С. Связан ли данный визит с выполнением Ваших официальных обязанностей?',
-      yes: 'Да',
-      no: 'Нет',
+      yes: 'Да', no: 'Нет',
       terminate: 'Спасибо за Ваш интерес. К сожалению, Вы не соответствуете критериям данного опроса.',
       continueBtn: 'Продолжить основной опрос →',
       back: 'На главную',
+    },
+    ar: {
+      header: '🔍 أسئلة الفرز',
+      F1: 'F1. هل كانت زيارتك لأوزبكستان أقل من 12 شهراً؟',
+      F2: 'F2. هل تنتمي إلى إحدى الفئات التالية: دبلوماسي، موظف قنصلي، فرد من العسكر، لاجئ، أو فرد من طاقم نقل؟',
+      F3: 'F3. هل ترتبط هذه الزيارة بمهامك الرسمية؟',
+      yes: 'نعم', no: 'لا',
+      terminate: 'شكراً لاهتمامك. للأسف، لست مؤهلاً لهذا الاستطلاع.',
+      continueBtn: '→ المتابعة إلى الاستطلاع الرئيسي',
+      back: 'العودة إلى الرئيسية',
+    },
+    zh: {
+      header: '🔍 筛选问题',
+      F1: 'F1. 您在乌兹别克斯坦的访问期是否少于 12 个月？',
+      F2: 'F2. 您是否属于以下类别之一：外交官、领事官员、军人、难民或运输人员？',
+      F3: 'F3. 此次访问是否与您的官方职责相关？',
+      yes: '是', no: '否',
+      terminate: '感谢您的关注。很遗憾，您不符合本次问卷的资格。',
+      continueBtn: '继续主问卷 →',
+      back: '返回首页',
+    },
+    fr: {
+      header: '🔍 Questions de sélection',
+      F1: 'F1. Votre visite en Ouzbékistan a-t-elle duré moins de 12 mois ?',
+      F2: 'F2. Appartenez-vous à l\'une des catégories suivantes : diplomate, agent consulaire, militaire, réfugié ou membre d\'équipage ?',
+      F3: 'F3. Cette visite est-elle liée à vos fonctions officielles ?',
+      yes: 'Oui', no: 'Non',
+      terminate: "Merci de votre intérêt. Malheureusement, vous n'êtes pas éligible à cette enquête.",
+      continueBtn: "Continuer vers l'enquête principale →",
+      back: "Retour à l'accueil",
+    },
+    de: {
+      header: '🔍 Screening-Fragen',
+      F1: 'F1. Dauerte Ihr Besuch in Usbekistan weniger als 12 Monate?',
+      F2: 'F2. Gehören Sie zu einer der folgenden Kategorien: Diplomat, Konsularbeamter, Militärangehöriger, Flüchtling oder Transportbesatzung?',
+      F3: 'F3. Steht dieser Besuch im Zusammenhang mit Ihren amtlichen Pflichten?',
+      yes: 'Ja', no: 'Nein',
+      terminate: 'Vielen Dank für Ihr Interesse. Leider sind Sie für diese Umfrage nicht berechtigt.',
+      continueBtn: 'Weiter zur Hauptumfrage →',
+      back: 'Zurück zur Startseite',
+    },
+    it: {
+      header: '🔍 Domande di screening',
+      F1: 'F1. La sua visita in Uzbekistan è durata meno di 12 mesi?',
+      F2: 'F2. Appartiene a una delle seguenti categorie: diplomatico, funzionario consolare, militare, rifugiato o membro di equipaggio?',
+      F3: 'F3. Questa visita è legata ai suoi doveri ufficiali?',
+      yes: 'Sì', no: 'No',
+      terminate: 'Grazie per il suo interesse. Purtroppo non è idoneo per questa indagine.',
+      continueBtn: "Continua all'indagine principale →",
+      back: 'Torna alla home',
+    },
+    es: {
+      header: '🔍 Preguntas de selección',
+      F1: 'F1. ¿Su visita a Uzbekistán fue por menos de 12 meses?',
+      F2: 'F2. ¿Pertenece a una de las siguientes categorías: diplomático, funcionario consular, militar, refugiado o tripulación de transporte?',
+      F3: 'F3. ¿Esta visita está relacionada con sus funciones oficiales?',
+      yes: 'Sí', no: 'No',
+      terminate: 'Gracias por su interés. Lamentablemente, no es elegible para esta encuesta.',
+      continueBtn: 'Continuar a la encuesta principal →',
+      back: 'Volver al inicio',
+    },
+    tg: {
+      header: '🔍 Саволҳои интихобӣ',
+      F1: 'F1. Оё мӯҳлати сафари Шумо ба Ӯзбекистон камтар аз 12 моҳ буд?',
+      F2: 'F2. Оё Шумо ба яке аз гурӯҳҳои зерин тааллуқ доред: дипломат, корманди консулӣ, аскар, гуреза ё аъзои экипажи нақлиёт?',
+      F3: 'F3. Оё ин сафар бо вазифаҳои хидматии Шумо алоқаманд аст?',
+      yes: 'Ҳа', no: 'Не',
+      terminate: 'Ташаккур барои таваҷҷӯҳи Шумо. Мутаассифона, Шумо барои ин пурсиш мувофиқ нестед.',
+      continueBtn: 'Идома ба пурсиши асосӣ →',
+      back: 'Бозгашт ба саҳифаи асосӣ',
     },
   };
 
@@ -225,10 +421,14 @@
   function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
   function setLang(lang) {
+    if (!T[lang]) lang = 'en'; // fallback
     currentLang = lang;
     document.querySelectorAll('.lang-tab').forEach(function (t) { t.classList.remove('active'); });
     var tab = document.getElementById('tab-' + lang);
     if (tab) tab.classList.add('active');
+    // RTL — faqat arab uchun
+    document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+    document.documentElement.setAttribute('lang', lang);
     var l = T[lang];
     var el = document.getElementById('wlc-title'); if (el) el.textContent = l.welcome_title;
     el = document.getElementById('wlc-text'); if (el) el.textContent = l.welcome_text;
@@ -236,7 +436,12 @@
     el = document.getElementById('btn-start'); if (el) el.textContent = l.start;
     // Screening sahifasi tarjimasini ham yangilash
     if (typeof scRender === 'function') {
-      try { scRender(); } catch (e) { /* sahifa hali yuklanmagan bo'lishi mumkin */ }
+      try { scRender(); } catch (e) { /* sahifa hali yuklanmagan */ }
+    }
+    // Survey sahifa ochiq bo'lsa, qayta render qilish
+    var surveyPage = document.getElementById('page-survey');
+    if (surveyPage && surveyPage.classList.contains('active')) {
+      try { renderQ(); } catch (e) {}
     }
   }
   window.setLang = setLang;
@@ -438,7 +643,19 @@
   }
 
   // ==================== HELPERS ====================
-  function t(en, ru) { return currentLang === 'ru' ? ru : en; }
+  // t(en, ru) — orqaga moslik uchun: 2 argumentli chaqiruvlar EN/RU qaytaradi.
+  // AR/ZH/FR/DE/IT/ES/TG uchun EN matni fallback bo'ladi (multilang asta-sekin to'ldiriladi).
+  function t(en, ru) {
+    if (currentLang === 'ru') return ru;
+    return en;
+  }
+  // tx(obj) — yangi yondashuv: t({en, ru, ar, zh, fr, de, it, es, tg}). Birinchi mavjudini qaytaradi.
+  function tx(obj) {
+    if (!obj) return '';
+    return obj[currentLang] || obj.en || obj.ru || '';
+  }
+  // EXP_ROWS, RATING_LABELS uchun til-aware label
+  function expLabel(row) { return row[currentLang] || row.en || ''; }
   function chip(n, total) {
     return '<div class="q-badge">' + T[currentLang].q_of + ' ' + n + ' / ' + total + '</div>';
   }
@@ -603,8 +820,8 @@
   function rQ6() {
     var seq = buildSeq();
     var ck = answers.q6 || {};
-    var places = currentLang === 'ru' ? PLACES_RU : PLACES_EN;
-    var placeKeys = PLACES_EN;
+    var places = getPlaces();
+    var placeKeys = PLACES_EN; // shahar nomlari (kalit sifatida) doimo EN
     return chip(6, seq.length) +
       qTitle('Which cities or regions did you visit during this trip, and how many nights did you spend in each?',
              'Какие города и регионы Вы посетили во время этой поездки и сколько ночей провели в каждом из них?') +
@@ -825,7 +1042,7 @@
       var isMand = row.mand && answers.q4 === 'exhibition';
       var checked = r.inPackage || false;
       var disabled = checked ? 'disabled' : '';
-      var label = t(row.en, row.ru);
+      var label = expLabel(row);
       if (isEmployment && row.n === 14) {
         label += ' <span style="color:var(--red);font-size:11px">(' + t('utility bills for accommodation; taxes and work permit', 'коммунальные услуги; налоги и разрешение на работу') + ')</span>';
       }
@@ -875,7 +1092,7 @@
   function rQ18() {
     var seq = buildSeq();
     if (!answers.q18) answers.q18 = {};
-    var ratingLabels = currentLang === 'ru' ? RATING_RU : RATING_EN;
+    var ratingLabels = getRatingLabels();
     var rows = ratingLabels.map(function (item, i) {
       var v = answers.q18['r' + i];
       var btns = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function (n) {
@@ -1047,13 +1264,12 @@
   function init() {
     var saved = loadState();
     if (saved && saved.answers) {
-      // Avvalgi answers ni ko'chirish (window.answers reference saqlanadi)
       Object.keys(saved.answers).forEach(function (k) { answers[k] = saved.answers[k]; });
-      currentLang = saved.currentLang || 'en';
+      var savedLang = saved.currentLang || 'en';
+      if (!T[savedLang]) savedLang = 'en';
+      currentLang = savedLang;
       currentQIdx = saved.currentQIdx || 0;
-      // Til tablarini yangilash
       setLang(currentLang);
-      // To'g'ridan-to'g'ri survey sahifasiga o'tish
       renderQ();
       goTo('page-survey');
     } else {

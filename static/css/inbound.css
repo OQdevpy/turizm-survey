@@ -292,6 +292,20 @@
 }
 .btn-sc-back:hover { background: var(--navy); color: #fff; }
 
+/* ============ Til tablari kichikroq (9 ta sig'ishi uchun) ============ */
+.lang-tabs .lang-tab { padding: 6px 10px; font-size: 11px; }
+.lang-tabs .lang-tab .lang-code { font-size: 9px; opacity: 0.7; margin-right: 3px; }
+
+/* ============ RTL (Arabic) qo'llab-quvvatlash ============ */
+html[dir="rtl"] body { direction: rtl; }
+html[dir="rtl"] .lang-tabs { justify-content: flex-start; }
+html[dir="rtl"] .place-nights { flex-direction: row-reverse; }
+html[dir="rtl"] .survey-nav { flex-direction: row-reverse; }
+html[dir="rtl"] .exp-num { text-align: right; }
+html[dir="rtl"] .search-icon { left: auto; right: 14px; }
+html[dir="rtl"] .search-input { padding-left: 14px; padding-right: 42px; }
+html[dir="rtl"] .opt-item, html[dir="rtl"] .checkbox-item { flex-direction: row-reverse; }
+
 @media (max-width: 500px) {
   .lang-card { padding: 22px 18px 28px; }
   .survey-body { padding: 20px 18px 12px; }
