@@ -1,8 +1,9 @@
 import io
 import json
+from collections import Counter, defaultdict
 from datetime import timedelta
 
-from django.db.models import Count, Sum, Q
+from django.db.models import Count, Sum, Avg, Q
 from django.db.models.functions import TruncDate
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -375,6 +376,7 @@ def export_excel(request):
         '#', 'ID', 'Turi', 'Manba', 'Til',
         'Xodim (login)', 'Xodim (F.I.SH)', 'Bo\'lim kodi', 'Bo\'lim nomi', 'Region',
         'Davlat', 'Maqsad', 'Tunlar', 'Xarajat', 'Valyuta',
+        'Filtr holati', 'F1', 'F2', 'F3',
         'GPS bormi', 'Latitude', 'Longitude', 'GPS aniqlik (m)', 'Google Maps',
         'Boshlangan', 'Yakunlangan', 'IP', 'User-Agent',
     ]
@@ -394,6 +396,7 @@ def export_excel(request):
             except Exception:
                 staff_full = r.staff.get_full_name() or r.staff.username
 
+        sc = r.screening_data or {}
         ws.append([
             idx,
             str(r.id),
@@ -410,6 +413,10 @@ def export_excel(request):
             r.nights if r.nights is not None else '',
             float(r.total_spent) if r.total_spent else '',
             r.spent_currency or '',
+            r.get_screening_status_display(),
+            sc.get('F1', '') or '',
+            sc.get('F2', '') or '',
+            sc.get('F3', '') or '',
             'Ha' if r.location_granted else "Yo'q",
             float(r.latitude) if r.latitude is not None else '',
             float(r.longitude) if r.longitude is not None else '',
@@ -422,7 +429,9 @@ def export_excel(request):
         ])
 
     # Google Maps ustunini hyperlink qilish
-    gmaps_col = 20  # 1-indexed
+    # Headers tartibi: 1-15 oddiy, 16-19 screening (Filtr holati, F1, F2, F3),
+    # 20 GPS bormi, 21 Lat, 22 Lon, 23 Aniqlik, 24 Google Maps
+    gmaps_col = 24  # 1-indexed
     for row_num in range(2, ws.max_row + 1):
         cell = ws.cell(row=row_num, column=gmaps_col)
         if cell.value:
@@ -769,3 +778,442 @@ def export_excel(request):
     )
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
+
+
+# ============================================
+# MONITORING — har bir savol bo'yicha taqsimot (faqat superuser)
+# ============================================
+
+# Inbound savollarining ko'rinadigan nomlari (UZ)
+INBOUND_Q_LABELS = {
+    'q1': '1. Doimiy yashash mamlakati',
+    'q2': '2. Pasport',
+    'q3': '3. Tashrif maqsadi',
+    'q4': '4. Biznes tashrif turi',
+    'q5': '5. Tunlar soni',
+    'q6': '6. Shaharlar / regionlar',
+    'q7': '7. Turar joy turi',
+    'q8': '8. Ovqat olingan joylar',
+    'q9': '9. Paketli tur orqali keldimi?',
+    'q10': '10. Paket tunlari (jami / UZ)',
+    'q11': '11. Paketdagi kishilar',
+    'q12': '12. Paket narxi',
+    'q13': '13. Kelish transporti',
+    'q14': '14. Ketish transporti',
+    'q15': '15. Daromad ulushi (xorijiy ishchilar)',
+    'q16': '16. Umumiy xarajat',
+    'q17': '17. Xarajatlar jadvali (TOP qatorlar)',
+    'q18': '18. Xizmatlar reytingi (1-10)',
+    'q19': '19. Izoh',
+}
+
+OUTBOUND_Q_LABELS = {
+    'q1': '1. Sayohat asosiy davlati',
+    'q2': '2. Sayohat maqsadi',
+    'q3': '3. Biznes tashrif turi',
+    'q4': '4. Chet elda tunlar',
+    'q5': '5. Turar joy turi',
+    'q6': '6. Paket tur?',
+    'q7': '7. Paket tunlar',
+    'q8': '8. Paket kishilar',
+    'q9': '9. Paket narxi',
+    'q10': '10. UZ dan chiqish transporti',
+    'q11': '11. UZ ga qaytish transporti',
+    'q12': '12. Daromad ulushi (employment)',
+    'q13': '13. Umumiy xarajat',
+    'q14': '14. Xarajatlar jadvali',
+}
+
+# Inbound Q18 — 12 ta xizmat
+RATING_LABELS_UZ = [
+    'Xalqaro transport (UZ kompaniyalari)',
+    'Pasport nazorati',
+    'Mehmondo\'stlik',
+    'Sifat/narx nisbati',
+    'Ovqat',
+    'Tozalik',
+    'Transport (UZ ichida)',
+    'Xavfsizlik',
+    'Madaniyat va ko\'ngilochar',
+    'Turar joy',
+    'Sog\'liq xizmatlari',
+    'Aloqa/Internet/Wi-Fi',
+]
+
+# Inbound Q17 — 14 ta xarajat qatori
+INBOUND_EXP_LABELS = [
+    'Turar joy', 'Ovqat', 'Xalqaro transport', 'Mahalliy transport',
+    'Madaniy xizmatlar', 'Sport / ko\'ngilochar', 'Ta\'lim', 'Turizm xizmatlari (UZ)',
+    'Tibbiy', 'Yoqilg\'i va xizmat', 'Qimmatbaho buyumlar', 'Xaridlar (do\'kon)',
+    'Qayta sotish uchun', 'Boshqa',
+]
+# Outbound Q14 — 13 ta xarajat (1, 1.1, 1.2, 2..13)
+OUTBOUND_EXP_LABELS = [
+    ('1', 'Turar joy'),
+    ('1.1', '— kommunal toʻlovlar (employment)'),
+    ('1.2', '— soliqlar va ruxsatnoma (employment)'),
+    ('2', 'Ovqat va ichimliklar'),
+    ('3', 'Xalqaro transport'),
+    ('4', 'Mahalliy transport'),
+    ('5', 'Madaniy xizmatlar'),
+    ('6', 'Sport / ko\'ngilochar'),
+    ('7', 'Ta\'lim'),
+    ('8', 'Tibbiy xizmatlar'),
+    ('9', 'Yoqilg\'i va xizmat'),
+    ('10', 'Qimmatbaho buyumlar'),
+    ('11', 'Xaridlar'),
+    ('12', 'Qayta sotish uchun'),
+    ('13', 'Boshqa xarajatlar'),
+]
+
+
+def _counter_top(counter, top=15):
+    """Counter dan top N ta itemni list of (label, count) qaytaradi."""
+    return [{'label': k or '—', 'count': v} for k, v in counter.most_common(top)]
+
+
+def _nights_buckets(nights_list):
+    """Tunlar ro'yxatini diapazonlarga bo'lish."""
+    buckets = [
+        ('0 tun', lambda n: n == 0),
+        ('1 tun', lambda n: n == 1),
+        ('2 tun', lambda n: n == 2),
+        ('3-5 tun', lambda n: 3 <= n <= 5),
+        ('6-10 tun', lambda n: 6 <= n <= 10),
+        ('11-20 tun', lambda n: 11 <= n <= 20),
+        ('21-30 tun', lambda n: 21 <= n <= 30),
+        ('30+ tun', lambda n: n > 30),
+    ]
+    result = []
+    for label, predicate in buckets:
+        count = sum(1 for n in nights_list if predicate(n))
+        if count:
+            result.append({'label': label, 'count': count})
+    return result
+
+
+def _money_buckets(amounts):
+    """Xarajat summalarini diapazonlarga bo'lish (USD ekvivalent emas — yaqinroqlik uchun)."""
+    buckets = [
+        ('< 100', lambda v: v < 100),
+        ('100–500', lambda v: 100 <= v < 500),
+        ('500–1k', lambda v: 500 <= v < 1000),
+        ('1k–5k', lambda v: 1000 <= v < 5000),
+        ('5k–10k', lambda v: 5000 <= v < 10000),
+        ('10k+', lambda v: v >= 10000),
+    ]
+    result = []
+    for label, predicate in buckets:
+        count = sum(1 for v in amounts if predicate(v))
+        if count:
+            result.append({'label': label, 'count': count})
+    return result
+
+
+def _analyze_inbound(qs):
+    """Inbound so'rovnomalari uchun har bir savol bo'yicha statistika."""
+    stats = {}
+    countries = Counter()
+    purposes = Counter()
+    passport_types = Counter()
+    business_types = Counter()
+    nights = []
+    cities = Counter()
+    accommodation = Counter()
+    food_places = Counter()
+    package = Counter()
+    pkg_nights_total = []
+    pkg_nights_uz = []
+    pkg_persons = []
+    pkg_amount = []
+    transport_in = Counter()
+    transport_out = Counter()
+    airline_in = Counter()
+    airline_out = Counter()
+    income_share = Counter()
+    total_spent = []
+    total_persons = []
+    expense_used = Counter()
+    expense_in_package = Counter()
+    rating_sums = [0] * 12
+    rating_counts = [0] * 12
+    rating_na = [0] * 12
+    comments_count = 0
+
+    for r in qs:
+        d = r.data or {}
+        if d.get('q1'): countries[d['q1']] += 1
+        if d.get('q3'): purposes[d['q3']] += 1
+        if d.get('q2'): passport_types[d['q2']] += 1
+        if d.get('q4'): business_types[d['q4']] += 1
+        try:
+            n = int(d.get('q5_nights')) if d.get('q5_nights') not in (None, '') else None
+            if d.get('q5_zero'): n = 0
+            if n is not None: nights.append(n)
+        except (TypeError, ValueError):
+            pass
+        q6 = d.get('q6') or {}
+        if isinstance(q6, dict):
+            for city in q6.keys(): cities[city] += 1
+        if d.get('q7') is not None and d.get('q7') != '': accommodation[str(d['q7'])] += 1
+        q8 = d.get('q8') or {}
+        if isinstance(q8, dict):
+            for k, v in q8.items():
+                if v: food_places[k] += 1
+        if d.get('q9'): package[d['q9']] += 1
+        try:
+            if d.get('q10_total'): pkg_nights_total.append(int(d['q10_total']))
+        except (TypeError, ValueError): pass
+        try:
+            if d.get('q10_uz'): pkg_nights_uz.append(int(d['q10_uz']))
+        except (TypeError, ValueError): pass
+        try:
+            if d.get('q11'): pkg_persons.append(int(d['q11']))
+        except (TypeError, ValueError): pass
+        try:
+            if d.get('q12_amount'): pkg_amount.append(float(d['q12_amount']))
+        except (TypeError, ValueError): pass
+        if d.get('q13'): transport_in[d['q13']] += 1
+        if d.get('q13_airline'): airline_in[d['q13_airline']] += 1
+        if d.get('q14'): transport_out[d['q14']] += 1
+        if d.get('q14_airline'): airline_out[d['q14_airline']] += 1
+        if d.get('q15'): income_share[d['q15']] += 1
+        try:
+            if d.get('q16_sum'): total_spent.append(float(d['q16_sum']))
+        except (TypeError, ValueError): pass
+        try:
+            if d.get('q16_persons'): total_persons.append(int(d['q16_persons']))
+        except (TypeError, ValueError): pass
+
+        q17 = d.get('q17') or {}
+        if isinstance(q17, dict):
+            for k, row in q17.items():
+                if not isinstance(row, dict): continue
+                idx = k.replace('r', '', 1)
+                try:
+                    i = int(idx) - 1
+                    if i < 0 or i >= len(INBOUND_EXP_LABELS): continue
+                    label = INBOUND_EXP_LABELS[i]
+                    if row.get('amount') or row.get('inPackage'):
+                        expense_used[label] += 1
+                    if row.get('inPackage'):
+                        expense_in_package[label] += 1
+                except (ValueError, TypeError): continue
+
+        q18 = d.get('q18') or {}
+        if isinstance(q18, dict):
+            for k, v in q18.items():
+                try:
+                    i = int(k.replace('r', ''))
+                    if 0 <= i < 12:
+                        if v == 'na': rating_na[i] += 1
+                        else:
+                            try:
+                                rating_sums[i] += float(v); rating_counts[i] += 1
+                            except (TypeError, ValueError): pass
+                except (ValueError, TypeError): pass
+
+        if d.get('q19'): comments_count += 1
+
+    stats['countries'] = _counter_top(countries, 15)
+    stats['purposes'] = _counter_top(purposes, 12)
+    stats['passport_types'] = _counter_top(passport_types, 5)
+    stats['business_types'] = _counter_top(business_types, 6)
+    stats['nights_buckets'] = _nights_buckets(nights)
+    stats['nights_avg'] = round(sum(nights) / len(nights), 1) if nights else 0
+    stats['cities'] = _counter_top(cities, 15)
+    stats['accommodation'] = _counter_top(accommodation, 10)
+    stats['food_places'] = _counter_top(food_places, 10)
+    stats['package'] = _counter_top(package, 3)
+    stats['pkg_nights_total_avg'] = round(sum(pkg_nights_total) / len(pkg_nights_total), 1) if pkg_nights_total else 0
+    stats['pkg_nights_uz_avg'] = round(sum(pkg_nights_uz) / len(pkg_nights_uz), 1) if pkg_nights_uz else 0
+    stats['pkg_persons_avg'] = round(sum(pkg_persons) / len(pkg_persons), 1) if pkg_persons else 0
+    stats['pkg_amount_buckets'] = _money_buckets(pkg_amount)
+    stats['transport_in'] = _counter_top(transport_in, 5)
+    stats['transport_out'] = _counter_top(transport_out, 5)
+    stats['airline_in'] = _counter_top(airline_in, 5)
+    stats['airline_out'] = _counter_top(airline_out, 5)
+    stats['income_share'] = _counter_top(income_share, 5)
+    stats['total_spent_buckets'] = _money_buckets(total_spent)
+    stats['total_spent_avg'] = round(sum(total_spent) / len(total_spent), 2) if total_spent else 0
+    stats['total_persons_avg'] = round(sum(total_persons) / len(total_persons), 1) if total_persons else 0
+    stats['expense_used'] = [{'label': l, 'count': expense_used.get(l, 0)} for l in INBOUND_EXP_LABELS]
+    stats['expense_in_package'] = [{'label': l, 'count': expense_in_package.get(l, 0)} for l in INBOUND_EXP_LABELS]
+    ratings = []
+    for i, label in enumerate(RATING_LABELS_UZ):
+        avg = round(rating_sums[i] / rating_counts[i], 2) if rating_counts[i] else 0
+        ratings.append({
+            'label': label, 'avg': avg,
+            'count': rating_counts[i], 'na': rating_na[i],
+        })
+    stats['ratings'] = ratings
+    stats['comments_count'] = comments_count
+    return stats
+
+
+def _analyze_outbound(qs):
+    """Outbound so'rovnomalari uchun har bir savol bo'yicha statistika."""
+    stats = {}
+    countries = Counter()
+    purposes = Counter()
+    business_types = Counter()
+    nights = []
+    accommodation = Counter()
+    package = Counter()
+    pkg_nights = []
+    pkg_persons = []
+    pkg_amount = []
+    transport_out = Counter()
+    transport_in = Counter()
+    airline_out = Counter()
+    airline_in = Counter()
+    income_share = Counter()
+    total_spent = []
+    total_persons = []
+    expense_used = Counter()
+    expense_in_pkg = Counter()
+
+    for r in qs:
+        d = r.data or {}
+        if d.get('q1'): countries[d['q1']] += 1
+        if d.get('q2'): purposes[d['q2']] += 1
+        if d.get('q3'): business_types[d['q3']] += 1
+        try:
+            n = d.get('q4_val')
+            if n in (None, ''): n = d.get('q4_nights')
+            if n not in (None, ''):
+                nights.append(int(n))
+        except (TypeError, ValueError): pass
+        if d.get('q5'): accommodation[str(d['q5'])] += 1
+        if d.get('q6'): package[d['q6']] += 1
+        try:
+            if d.get('q7'): pkg_nights.append(int(d['q7']))
+        except (TypeError, ValueError): pass
+        try:
+            v = d.get('q8') or d.get('q8_persons')
+            if v: pkg_persons.append(int(v))
+        except (TypeError, ValueError): pass
+        try:
+            if d.get('q9_amount'): pkg_amount.append(float(d['q9_amount']))
+        except (TypeError, ValueError): pass
+        if d.get('q10'): transport_out[d['q10']] += 1
+        if d.get('q10_airline'): airline_out[d['q10_airline']] += 1
+        if d.get('q11'): transport_in[d['q11']] += 1
+        if d.get('q11_airline'): airline_in[d['q11_airline']] += 1
+        if d.get('q12'): income_share[d['q12']] += 1
+        try:
+            amount = d.get('q13_amount') or d.get('q13_sum')
+            if amount: total_spent.append(float(amount))
+        except (TypeError, ValueError): pass
+        try:
+            if d.get('q13_persons'): total_persons.append(int(d['q13_persons']))
+        except (TypeError, ValueError): pass
+
+        q14 = d.get('q14') or {}
+        if isinstance(q14, dict):
+            label_map = {n: lbl for n, lbl in OUTBOUND_EXP_LABELS}
+            for k, row in q14.items():
+                if not isinstance(row, dict): continue
+                rn = k.replace('r', '', 1)
+                label = label_map.get(rn, rn)
+                if row.get('amount') or row.get('inPkg'):
+                    expense_used[label] += 1
+                if row.get('inPkg'):
+                    expense_in_pkg[label] += 1
+
+    stats['countries'] = _counter_top(countries, 15)
+    stats['purposes'] = _counter_top(purposes, 12)
+    stats['business_types'] = _counter_top(business_types, 6)
+    stats['nights_buckets'] = _nights_buckets(nights)
+    stats['nights_avg'] = round(sum(nights) / len(nights), 1) if nights else 0
+    stats['accommodation'] = _counter_top(accommodation, 10)
+    stats['package'] = _counter_top(package, 3)
+    stats['pkg_nights_avg'] = round(sum(pkg_nights) / len(pkg_nights), 1) if pkg_nights else 0
+    stats['pkg_persons_avg'] = round(sum(pkg_persons) / len(pkg_persons), 1) if pkg_persons else 0
+    stats['pkg_amount_buckets'] = _money_buckets(pkg_amount)
+    stats['transport_out'] = _counter_top(transport_out, 5)
+    stats['transport_in'] = _counter_top(transport_in, 5)
+    stats['airline_out'] = _counter_top(airline_out, 5)
+    stats['airline_in'] = _counter_top(airline_in, 5)
+    stats['income_share'] = _counter_top(income_share, 5)
+    stats['total_spent_buckets'] = _money_buckets(total_spent)
+    stats['total_spent_avg'] = round(sum(total_spent) / len(total_spent), 2) if total_spent else 0
+    stats['total_persons_avg'] = round(sum(total_persons) / len(total_persons), 1) if total_persons else 0
+    ordered_labels = [lbl for _, lbl in OUTBOUND_EXP_LABELS]
+    stats['expense_used'] = [{'label': l, 'count': expense_used.get(l, 0)} for l in ordered_labels]
+    stats['expense_in_package'] = [{'label': l, 'count': expense_in_pkg.get(l, 0)} for l in ordered_labels]
+    return stats
+
+
+@superuser_required
+def monitoring(request):
+    """Har bir savol bo'yicha monitoring — faqat superuser.
+
+    Filtr: sana oralig'i, manba (public/staff), bo'lim, til.
+    Sahifa Inbound va Outbound uchun alohida tab/qism bilan ko'rsatadi.
+    """
+    qs = SurveyResponse.objects.filter(is_completed=True)
+
+    # Filtrlar
+    date_from = request.GET.get('from')
+    date_to = request.GET.get('to')
+    source = request.GET.get('source')  # 'public' | 'staff' | ''
+    office_id = request.GET.get('office')
+    language = request.GET.get('language')
+    screening_status = request.GET.get('screening')  # 'eligible' | 'terminated' | ''
+
+    if date_from: qs = qs.filter(started_at__date__gte=date_from)
+    if date_to: qs = qs.filter(started_at__date__lte=date_to)
+    if source in ('public', 'staff'): qs = qs.filter(source=source)
+    if office_id:
+        try: qs = qs.filter(postal_office_id=int(office_id))
+        except ValueError: pass
+    if language: qs = qs.filter(language=language)
+    if screening_status in ('eligible', 'terminated', 'skipped'):
+        qs = qs.filter(screening_status=screening_status)
+
+    inbound_qs = qs.filter(survey_type=SurveyResponse.SURVEY_INBOUND)
+    outbound_qs = qs.filter(survey_type=SurveyResponse.SURVEY_OUTBOUND)
+
+    # Asosiy summary
+    total = qs.count()
+    inbound_total = inbound_qs.count()
+    outbound_total = outbound_qs.count()
+
+    # Screening taqsimoti
+    screening_dist = list(
+        qs.values('screening_status')
+        .annotate(c=Count('id')).order_by('-c')
+    )
+
+    # Tillar taqsimoti
+    languages_dist = list(
+        qs.values('language').annotate(c=Count('id')).order_by('-c')
+    )
+
+    # Har bir savol bo'yicha tahlil
+    inbound_stats = _analyze_inbound(inbound_qs) if inbound_total else None
+    outbound_stats = _analyze_outbound(outbound_qs) if outbound_total else None
+
+    context = {
+        'total': total,
+        'inbound_total': inbound_total,
+        'outbound_total': outbound_total,
+        'screening_dist': screening_dist,
+        'languages_dist': languages_dist,
+        'inbound_stats': inbound_stats,
+        'outbound_stats': outbound_stats,
+        'inbound_q_labels': INBOUND_Q_LABELS,
+        'outbound_q_labels': OUTBOUND_Q_LABELS,
+        'offices': PostalOffice.objects.filter(is_active=True),
+        'languages_choices': SurveyResponse.LANGUAGES,
+        'filters': {
+            'from': date_from or '',
+            'to': date_to or '',
+            'source': source or '',
+            'office': office_id or '',
+            'language': language or '',
+            'screening': screening_status or '',
+        },
+    }
+    return render(request, 'dashboard/monitoring.html', context)

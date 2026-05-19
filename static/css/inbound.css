@@ -246,6 +246,52 @@
 }
 .btn-restart:hover { transform: translateY(-2px); }
 
+/* ============ SCREENING (F1/F2/F3) ============ */
+.screening-header {
+  background: linear-gradient(90deg, var(--navy) 0%, var(--blue) 100%);
+  padding: 16px 20px; color: #fff; font-weight: 800; font-size: 18px;
+  text-align: center; border-radius: 22px 22px 0 0;
+}
+.screening-body { padding: 28px 24px 30px; }
+.sc-question { margin-bottom: 24px; }
+.sc-q-title {
+  font-size: 16px; font-weight: 800; color: var(--text);
+  margin-bottom: 12px; line-height: 1.4;
+}
+.sc-yn-group { display: flex; gap: 14px; margin-top: 8px; }
+.sc-yn-btn {
+  flex: 1; padding: 14px; border-radius: 14px;
+  border: 2px solid #e2edf7; background: #f8fbfd;
+  font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 800;
+  cursor: pointer; text-align: center; color: var(--muted); transition: all .18s;
+}
+.sc-yn-btn:hover { border-color: var(--blue); color: var(--blue); }
+.sc-yn-btn.sel-yes { background: #eafaf3; border-color: var(--green); color: var(--green); }
+.sc-yn-btn.sel-no  { background: #fef0f0; border-color: var(--red);   color: var(--red);   }
+.sc-yn-btn.sc-disabled { pointer-events: none; opacity: .5; }
+.sc-result-terminate {
+  margin-top: 22px; padding: 16px; border-radius: 14px;
+  background: #fff0f0; border-left: 5px solid var(--red);
+  color: #b12a2a; font-weight: 600; text-align: center; line-height: 1.5;
+}
+.sc-result-eligible { margin-top: 22px; padding: 4px; }
+.btn-sc-continue {
+  width: 100%; padding: 14px;
+  background: var(--green); border: none; border-radius: 40px;
+  font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 800;
+  color: #fff; cursor: pointer; transition: background .2s;
+  box-shadow: 0 4px 16px rgba(0, 184, 148, 0.28);
+}
+.btn-sc-continue:hover { background: #009f6b; }
+.btn-sc-back {
+  display: block; margin: 22px auto 0; padding: 11px 22px;
+  border-radius: 12px; border: 2px solid var(--navy);
+  background: transparent; font-family: 'Nunito', sans-serif;
+  font-size: 14px; font-weight: 800; color: var(--navy);
+  cursor: pointer; width: 100%; transition: all .18s;
+}
+.btn-sc-back:hover { background: var(--navy); color: #fff; }
+
 @media (max-width: 500px) {
   .lang-card { padding: 22px 18px 28px; }
   .survey-body { padding: 20px 18px 12px; }
@@ -253,3 +299,5 @@
   .exp-head, .exp-row { grid-template-columns: 1fr 28px 110px 90px; }
   .rating-btn { width: 31px; height: 31px; font-size: 12px; }
 }
+
+/* ============ SCREENING (F1/F2/F3) ============ */

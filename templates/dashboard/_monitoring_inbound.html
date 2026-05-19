@@ -1,0 +1,301 @@
+{% load humanize %}
+
+{# Q1 — Davlatlar #}
+<div class="q-block">
+  <h3>{{ labels.q1 }} <span class="q-count">TOP 15</span></h3>
+  <div class="q-bar-list">
+    {% for item in s.countries %}
+      <div class="q-bar-row">
+        <div class="lbl" title="{{ item.label }}">{{ item.label }}</div>
+        <div class="bar"><div class="bar-fill" style="width:{% widthratio item.count total 100 %}%"></div></div>
+        <div class="val">{{ item.count|intcomma }}</div>
+      </div>
+    {% empty %}
+      <div class="empty-q">Javoblar yo'q.</div>
+    {% endfor %}
+  </div>
+</div>
+
+{# Q2 — Pasport turi #}
+<div class="q-block">
+  <h3>{{ labels.q2 }}</h3>
+  <div class="q-bar-list">
+    {% for item in s.passport_types %}
+      <div class="q-bar-row">
+        <div class="lbl">{{ item.label }}</div>
+        <div class="bar"><div class="bar-fill" style="width:{% widthratio item.count total 100 %}%"></div></div>
+        <div class="val">{{ item.count|intcomma }}</div>
+      </div>
+    {% empty %}
+      <div class="empty-q">Javoblar yo'q.</div>
+    {% endfor %}
+  </div>
+</div>
+
+{# Q3 — Maqsad #}
+<div class="q-block">
+  <h3>{{ labels.q3 }}</h3>
+  <div class="q-bar-list">
+    {% for item in s.purposes %}
+      <div class="q-bar-row">
+        <div class="lbl">{{ item.label }}</div>
+        <div class="bar"><div class="bar-fill" style="width:{% widthratio item.count total 100 %}%"></div></div>
+        <div class="val">{{ item.count|intcomma }}</div>
+      </div>
+    {% empty %}
+      <div class="empty-q">Javoblar yo'q.</div>
+    {% endfor %}
+  </div>
+</div>
+
+{# Q4 — Biznes tashrif turi #}
+{% if s.business_types %}
+<div class="q-block">
+  <h3>{{ labels.q4 }}</h3>
+  <div class="q-bar-list">
+    {% for item in s.business_types %}
+      <div class="q-bar-row">
+        <div class="lbl">{{ item.label }}</div>
+        <div class="bar"><div class="bar-fill" style="width:{% widthratio item.count total 100 %}%"></div></div>
+        <div class="val">{{ item.count|intcomma }}</div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{# Q5 — Tunlar #}
+<div class="q-block">
+  <h3>{{ labels.q5 }}
+    <span class="q-count">O'rtacha: {{ s.nights_avg }} tun</span>
+  </h3>
+  <div class="q-bar-list">
+    {% for item in s.nights_buckets %}
+      <div class="q-bar-row">
+        <div class="lbl">{{ item.label }}</div>
+        <div class="bar"><div class="bar-fill" style="width:{% widthratio item.count total 100 %}%"></div></div>
+        <div class="val">{{ item.count|intcomma }}</div>
+      </div>
+    {% empty %}
+      <div class="empty-q">Javoblar yo'q.</div>
+    {% endfor %}
+  </div>
+</div>
+
+{# Q6 — Shaharlar #}
+<div class="q-block">
+  <h3>{{ labels.q6 }} <span class="q-count">TOP 15</span></h3>
+  <div class="q-bar-list">
+    {% for item in s.cities %}
+      <div class="q-bar-row">
+        <div class="lbl">{{ item.label }}</div>
+        <div class="bar"><div class="bar-fill" style="width:{% widthratio item.count total 100 %}%"></div></div>
+        <div class="val">{{ item.count|intcomma }}</div>
+      </div>
+    {% empty %}
+      <div class="empty-q">Javoblar yo'q.</div>
+    {% endfor %}
+  </div>
+</div>
+
+{# Q7 — Turar joy #}
+<div class="q-block">
+  <h3>{{ labels.q7 }}</h3>
+  <div class="q-bar-list">
+    {% for item in s.accommodation %}
+      <div class="q-bar-row">
+        <div class="lbl">{{ item.label }}</div>
+        <div class="bar"><div class="bar-fill" style="width:{% widthratio item.count total 100 %}%"></div></div>
+        <div class="val">{{ item.count|intcomma }}</div>
+      </div>
+    {% empty %}
+      <div class="empty-q">Javoblar yo'q.</div>
+    {% endfor %}
+  </div>
+</div>
+
+{# Q8 — Ovqat joylari #}
+<div class="q-block">
+  <h3>{{ labels.q8 }}</h3>
+  <div class="q-bar-list">
+    {% for item in s.food_places %}
+      <div class="q-bar-row">
+        <div class="lbl">{{ item.label }}</div>
+        <div class="bar"><div class="bar-fill" style="width:{% widthratio item.count total 100 %}%"></div></div>
+        <div class="val">{{ item.count|intcomma }}</div>
+      </div>
+    {% empty %}
+      <div class="empty-q">Javoblar yo'q.</div>
+    {% endfor %}
+  </div>
+</div>
+
+{# Q9 — Paket? #}
+<div class="q-block">
+  <h3>{{ labels.q9 }}</h3>
+  <div class="q-bar-list">
+    {% for item in s.package %}
+      <div class="q-bar-row">
+        <div class="lbl">{{ item.label }}</div>
+        <div class="bar"><div class="bar-fill" style="width:{% widthratio item.count total 100 %}%"></div></div>
+        <div class="val">{{ item.count|intcomma }}</div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+{# Q10-Q12 paket detallari #}
+<div class="q-block">
+  <h3>{{ labels.q10 }} / {{ labels.q11 }} / {{ labels.q12 }}</h3>
+  <div class="q-stat-grid">
+    <div class="q-stat-item"><div class="lbl">O'rt. paket tunlari (jami)</div><div class="val">{{ s.pkg_nights_total_avg }}</div></div>
+    <div class="q-stat-item"><div class="lbl">O'rt. UZ tunlari</div><div class="val">{{ s.pkg_nights_uz_avg }}</div></div>
+    <div class="q-stat-item"><div class="lbl">O'rt. paketdagi kishilar</div><div class="val">{{ s.pkg_persons_avg }}</div></div>
+  </div>
+  {% if s.pkg_amount_buckets %}
+  <div style="margin-top:12px"><strong style="font-size:12px;color:var(--muted)">Paket narxi diapazonlari:</strong></div>
+  <div class="q-bar-list">
+    {% for item in s.pkg_amount_buckets %}
+      <div class="q-bar-row">
+        <div class="lbl">{{ item.label }}</div>
+        <div class="bar"><div class="bar-fill" style="width:{% widthratio item.count total 100 %}%"></div></div>
+        <div class="val">{{ item.count|intcomma }}</div>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+{# Q13 + Q14 — Transport #}
+<div class="q-block">
+  <h3>{{ labels.q13 }} / {{ labels.q14 }}</h3>
+  <div class="q-stat-grid">
+    <div>
+      <div class="lbl" style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">Kelish:</div>
+      <div class="q-bar-list">
+        {% for item in s.transport_in %}
+          <div class="q-bar-row">
+            <div class="lbl">{{ item.label }}</div>
+            <div class="bar"><div class="bar-fill" style="width:{% widthratio item.count total 100 %}%"></div></div>
+            <div class="val">{{ item.count }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div>
+      <div class="lbl" style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">Ketish:</div>
+      <div class="q-bar-list">
+        {% for item in s.transport_out %}
+          <div class="q-bar-row">
+            <div class="lbl">{{ item.label }}</div>
+            <div class="bar"><div class="bar-fill" style="width:{% widthratio item.count total 100 %}%"></div></div>
+            <div class="val">{{ item.count }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% if s.airline_in or s.airline_out %}
+  <div style="margin-top:14px"><strong style="font-size:12px;color:var(--muted)">Aviakompaniya:</strong></div>
+  <div class="q-stat-grid">
+    <div>
+      <div class="lbl" style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">Kelish:</div>
+      {% for item in s.airline_in %}
+        <div class="q-bar-row">
+          <div class="lbl">{{ item.label }}</div>
+          <div class="bar"><div class="bar-fill" style="width:{% widthratio item.count total 100 %}%"></div></div>
+          <div class="val">{{ item.count }}</div>
+        </div>
+      {% endfor %}
+    </div>
+    <div>
+      <div class="lbl" style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">Ketish:</div>
+      {% for item in s.airline_out %}
+        <div class="q-bar-row">
+          <div class="lbl">{{ item.label }}</div>
+          <div class="bar"><div class="bar-fill" style="width:{% widthratio item.count total 100 %}%"></div></div>
+          <div class="val">{{ item.count }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{# Q15 — Daromad ulushi #}
+{% if s.income_share %}
+<div class="q-block">
+  <h3>{{ labels.q15 }} <span class="q-count">faqat employment</span></h3>
+  <div class="q-bar-list">
+    {% for item in s.income_share %}
+      <div class="q-bar-row">
+        <div class="lbl">{{ item.label }}</div>
+        <div class="bar"><div class="bar-fill" style="width:{% widthratio item.count total 100 %}%"></div></div>
+        <div class="val">{{ item.count|intcomma }}</div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{# Q16 — Umumiy xarajat #}
+<div class="q-block">
+  <h3>{{ labels.q16 }}
+    <span class="q-count">O'rt: {{ s.total_spent_avg }} · {{ s.total_persons_avg }} kishi</span>
+  </h3>
+  <div class="q-bar-list">
+    {% for item in s.total_spent_buckets %}
+      <div class="q-bar-row">
+        <div class="lbl">{{ item.label }}</div>
+        <div class="bar"><div class="bar-fill" style="width:{% widthratio item.count total 100 %}%"></div></div>
+        <div class="val">{{ item.count|intcomma }}</div>
+      </div>
+    {% empty %}
+      <div class="empty-q">Xarajat ma'lumotlari yo'q.</div>
+    {% endfor %}
+  </div>
+</div>
+
+{# Q17 — Xarajatlar #}
+<div class="q-block">
+  <h3>{{ labels.q17 }}</h3>
+  <div class="q-bar-list">
+    {% for item in s.expense_used %}
+      {% if item.count %}
+      <div class="q-bar-row">
+        <div class="lbl" title="{{ item.label }}">{{ item.label }}</div>
+        <div class="bar"><div class="bar-fill" style="width:{% widthratio item.count total 100 %}%"></div></div>
+        <div class="val">{{ item.count|intcomma }}</div>
+      </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+
+{# Q18 — Reytinglar #}
+<div class="q-block">
+  <h3>{{ labels.q18 }}</h3>
+  <div class="rating-grid">
+    {% for r in s.ratings %}
+      <div class="rating-item">
+        <div class="name">{{ r.label }}</div>
+        <div class="stars">
+          <div class="avg">{{ r.avg }}</div>
+          <div class="meta">
+            {{ r.count }} ta baho<br>
+            {% if r.na %}{{ r.na }} N/A{% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+{# Q19 — Izoh #}
+<div class="q-block">
+  <h3>{{ labels.q19 }}</h3>
+  <div style="font-size:13px;color:var(--text)">
+    💬 <strong>{{ s.comments_count|intcomma }}</strong> ta izoh qoldirilgan
+    ({{ total|intcomma }} ta yozuvdan)
+  </div>
+</div>

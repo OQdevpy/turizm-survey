@@ -143,6 +143,37 @@
     }
   };
 
+  // ==================== SCREENING TEXT (Outbound) ====================
+  var SC_TEXT = {
+    uz: {
+      header: '🔍 Filtr savollari',
+      F1: 'F1. Xorijga safaringiz 12 oydan kam davom etdimi?',
+      F2: 'F2. Siz quyidagi toifalardan biriga mansubmisiz: diplomat, konsullik xodimi, harbiy xizmatchi, qochqin yoki transport ekipaji aʼzosi?',
+      F3: 'F3. Ushbu safaringiz Sizning xizmat vazifalaringizni bajarish bilan bogʼliqmi?',
+      yes: 'Ha',
+      no: "Yo'q",
+      terminate: "Qiziqishingiz uchun rahmat. Afsuski, siz ushbu so'rovnomada qatnasha olmaysiz.",
+      continueBtn: "Asosiy so'rovnomaga o'tish →",
+      back: 'Bosh sahifaga qaytish',
+    },
+    ru: {
+      header: '🔍 Отборочные вопросы',
+      F1: 'A. Длилась ли Ваша поездка за рубеж менее 12 месяцев?',
+      F2: 'B. Относитесь ли Вы к одной из следующих категорий: дипломат, консульское должностное лицо, военнослужащий, беженец или член экипажа транспортного средства?',
+      F3: 'C. Связана ли данная поездка с выполнением Ваших служебных обязанностей?',
+      yes: 'Да',
+      no: 'Нет',
+      terminate: 'Спасибо за интерес. К сожалению, Вы не можете участвовать в данном опросе.',
+      continueBtn: 'Перейти к основной анкете →',
+      back: 'Вернуться на главную',
+    },
+  };
+
+  // ==================== SCREENING STATE ====================
+  var scAnswers = { F1: null, F2: null, F3: null };
+  var scTerminated = false;
+  window.__scAnswers = scAnswers;
+
   // ==================== BUILD SEQUENCE ====================
   function buildSeq() {
     var seq = ['q1', 'q2'];
@@ -184,19 +215,95 @@
     el = document.getElementById('welcome-text'); if (el) el.innerText = L.welcome_text;
     el = document.getElementById('welcome-conf'); if (el) el.innerText = L.welcome_conf;
     el = document.getElementById('start-btn'); if (el) el.innerText = L.start;
+    // Filter sahifasi tarjimasini ham yangilash
+    if (typeof scRender === 'function') {
+      try { scRender(); } catch (e) { /* sahifa hali yuklanmagan */ }
+    }
   }
   window.setLanguage = setLanguage;
 
   function startSurvey() {
+    // Yangi mantiq: START → filter sahifasi (page-filter)
     resetAnswers();
-    currentQIdx = 0;
     submitted = false;
-    document.querySelectorAll('.page').forEach(function (p) { p.classList.remove('active'); });
-    document.getElementById('page-survey').classList.add('active');
-    renderSurvey();
+    scReset();
+    goTo('page-filter');
     window.scrollTo(0, 0);
   }
   window.startSurvey = startSurvey;
+
+  // ==================== FILTER (SCREENING) LOGIC ====================
+  function scReset() {
+    scAnswers.F1 = null; scAnswers.F2 = null; scAnswers.F3 = null;
+    scTerminated = false;
+    scRender();
+  }
+  window.scReset = scReset;
+
+  function scRender() {
+    var tx = SC_TEXT[currentLang] || SC_TEXT.uz;
+    var headerEl = document.getElementById('sc-header');
+    if (headerEl) headerEl.textContent = tx.header;
+
+    ['F1', 'F2', 'F3'].forEach(function (q) {
+      var titleEl = document.getElementById('sc-title-' + q);
+      if (titleEl) titleEl.textContent = tx[q];
+      var yEl = document.getElementById('sc-' + q + '-yes');
+      var nEl = document.getElementById('sc-' + q + '-no');
+      if (yEl) { yEl.textContent = tx.yes; yEl.className = 'sc-yn-btn' + (scAnswers[q] === 'yes' ? ' sel-yes' : ''); }
+      if (nEl) { nEl.textContent = tx.no;  nEl.className = 'sc-yn-btn' + (scAnswers[q] === 'no'  ? ' sel-no'  : ''); }
+    });
+
+    var qF2 = document.getElementById('sc-qF2');
+    var qF3 = document.getElementById('sc-qF3');
+    if (qF2) qF2.style.display = scAnswers.F1 === 'yes' ? '' : 'none';
+    if (qF3) qF3.style.display = (scAnswers.F1 === 'yes' && scAnswers.F2 === 'yes') ? '' : 'none';
+
+    var resultEl = document.getElementById('sc-result');
+    if (!resultEl) return;
+    resultEl.innerHTML = '';
+
+    if (scTerminated) {
+      resultEl.innerHTML = '<div class="sc-result-terminate">' + tx.terminate + '</div>';
+      document.querySelectorAll('.sc-yn-btn').forEach(function (b) { b.classList.add('sc-disabled'); });
+    } else if (
+      (scAnswers.F1 === 'yes' && scAnswers.F2 === 'no') ||
+      (scAnswers.F1 === 'yes' && scAnswers.F2 === 'yes' && scAnswers.F3 === 'no')
+    ) {
+      resultEl.innerHTML =
+        '<div class="sc-result-eligible">' +
+        '<button class="btn-sc-continue" onclick="startMainSurvey()">' + tx.continueBtn + '</button>' +
+        '</div>';
+    }
+
+    var backLbl = document.getElementById('sc-back-label');
+    if (backLbl) backLbl.textContent = tx.back;
+  }
+  window.scRender = scRender;
+
+  function scAnswer(q, val) {
+    if (scTerminated) return;
+    scAnswers[q] = val;
+    if (q === 'F1') { scAnswers.F2 = null; scAnswers.F3 = null; }
+    if (q === 'F2') { scAnswers.F3 = null; }
+    scTerminated = false;
+    if (scAnswers.F1 === 'no') scTerminated = true;
+    if (scAnswers.F1 === 'yes' && scAnswers.F2 === 'yes' && scAnswers.F3 === 'yes') scTerminated = true;
+    scRender();
+  }
+  window.scAnswer = scAnswer;
+
+  function startMainSurvey() {
+    currentQIdx = 0;
+    submitted = false;
+    goTo('page-survey');
+    renderSurvey();
+    window.scrollTo(0, 0);
+  }
+  window.startMainSurvey = startMainSurvey;
+
+  function scGoHome() { goTo('page-home'); }
+  window.scGoHome = scGoHome;
 
   function prevQuestion() {
     if (currentQIdx > 0) { currentQIdx--; renderSurvey(); scrollToTop(); }
@@ -674,6 +781,7 @@
           answers: answers,
           language: currentLang,
           location: null,
+          screening: scAnswers,
         }),
       }).then(function (res) {
         if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -721,6 +829,7 @@
           answers: answers,
           language: currentLang,
           location: location,
+          screening: scAnswers,
         }),
       });
     }).then(function (res) {

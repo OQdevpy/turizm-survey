@@ -44,6 +44,38 @@
       </div></div>
     </div>
 
+    <!-- SCREENING (filter savollari) -->
+    <div class="page" id="page-screening">
+      <div class="card">
+        <div class="screening-header" id="sc-header">🔍 Screening questions</div>
+        <div class="screening-body">
+          <div class="sc-question" id="sc-qF1">
+            <div class="sc-q-title" id="sc-title-F1">F1. Was your visit to Uzbekistan for less than 12 months?</div>
+            <div class="sc-yn-group">
+              <div class="sc-yn-btn" id="sc-F1-yes" onclick="scAnswer('F1','yes')">Yes</div>
+              <div class="sc-yn-btn" id="sc-F1-no"  onclick="scAnswer('F1','no')">No</div>
+            </div>
+          </div>
+          <div class="sc-question" id="sc-qF2" style="display:none">
+            <div class="sc-q-title" id="sc-title-F2">F2. Do you belong to one of the following categories: diplomat, consular officer, military service member, refugee, or transport crew member?</div>
+            <div class="sc-yn-group">
+              <div class="sc-yn-btn" id="sc-F2-yes" onclick="scAnswer('F2','yes')">Yes</div>
+              <div class="sc-yn-btn" id="sc-F2-no"  onclick="scAnswer('F2','no')">No</div>
+            </div>
+          </div>
+          <div class="sc-question" id="sc-qF3" style="display:none">
+            <div class="sc-q-title" id="sc-title-F3">F3. Is this visit related to your official duties?</div>
+            <div class="sc-yn-group">
+              <div class="sc-yn-btn" id="sc-F3-yes" onclick="scAnswer('F3','yes')">Yes</div>
+              <div class="sc-yn-btn" id="sc-F3-no"  onclick="scAnswer('F3','no')">No</div>
+            </div>
+          </div>
+          <div id="sc-result"></div>
+          <button class="btn-sc-back" onclick="scGoHome()">← <span id="sc-back-label">Back to Home</span></button>
+        </div>
+      </div>
+    </div>
+
     <!-- SURVEY -->
     <div class="page" id="page-survey">
       <div class="card">

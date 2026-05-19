@@ -24,10 +24,34 @@ class SurveyResponse(models.Model):
     LANG_UZ = 'uz'
     LANG_RU = 'ru'
     LANG_EN = 'en'
+    LANG_AR = 'ar'
+    LANG_ZH = 'zh'
+    LANG_FR = 'fr'
+    LANG_DE = 'de'
+    LANG_IT = 'it'
+    LANG_ES = 'es'
+    LANG_TG = 'tg'
     LANGUAGES = [
         (LANG_UZ, "O'zbekcha"),
         (LANG_RU, 'Русский'),
         (LANG_EN, 'English'),
+        (LANG_AR, 'العربية'),
+        (LANG_ZH, '中文'),
+        (LANG_FR, 'Français'),
+        (LANG_DE, 'Deutsch'),
+        (LANG_IT, 'Italiano'),
+        (LANG_ES, 'Español'),
+        (LANG_TG, 'Тоҷикӣ'),
+    ]
+
+    # Screening (filtr) natijasi — F1/F2/F3 yes/no/null
+    SCREENING_ELIGIBLE = 'eligible'
+    SCREENING_TERMINATED = 'terminated'
+    SCREENING_SKIPPED = 'skipped'
+    SCREENING_STATUSES = [
+        (SCREENING_ELIGIBLE, "O'tdi"),
+        (SCREENING_TERMINATED, "To'xtatildi"),
+        (SCREENING_SKIPPED, "O'tkazib yuborildi"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -50,6 +74,17 @@ class SurveyResponse(models.Model):
     )
 
     language = models.CharField("Til", max_length=5, choices=LANGUAGES, default=LANG_UZ)
+
+    # Screening (filtr) javoblari — saqlash uchun
+    screening_status = models.CharField(
+        "Filtr (screening) holati",
+        max_length=20, choices=SCREENING_STATUSES, default=SCREENING_SKIPPED, db_index=True,
+    )
+    screening_data = models.JSONField(
+        "Filtr javoblari (F1/F2/F3)",
+        default=dict, blank=True,
+        help_text="{F1: 'yes'/'no', F2: 'yes'/'no'/null, F3: 'yes'/'no'/null}",
+    )
 
     # Tezkor filtrlash uchun ko'p ishlatiladigan maydonlar:
     country = models.CharField("Mamlakat", max_length=100, blank=True, db_index=True)

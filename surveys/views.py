@@ -19,6 +19,55 @@ def _client_ip(request):
     return request.META.get('REMOTE_ADDR')
 
 
+def _extract_screening(payload: dict) -> dict:
+    """Screening (F1/F2/F3) javoblarini ajratib oladi va eligibility statusini aniqlaydi.
+
+    Mantiq (Nonresident va Resident — bir xil):
+    - F1='no' → terminated
+    - F1='yes', F2='no' → eligible
+    - F1='yes', F2='yes', F3='yes' → terminated
+    - F1='yes', F2='yes', F3='no' → eligible
+    - Hech narsa yuborilmasa → skipped
+    """
+    sc = payload.get('screening') or {}
+    result = {
+        'screening_status': SurveyResponse.SCREENING_SKIPPED,
+        'screening_data': {},
+    }
+    if not isinstance(sc, dict):
+        return result
+
+    F1 = sc.get('F1')
+    F2 = sc.get('F2')
+    F3 = sc.get('F3')
+
+    # Hech bo'lmaganda F1 javob bo'lishi kerak
+    if F1 not in ('yes', 'no'):
+        return result
+
+    data = {'F1': F1}
+    if F2 in ('yes', 'no'):
+        data['F2'] = F2
+    if F3 in ('yes', 'no'):
+        data['F3'] = F3
+    result['screening_data'] = data
+
+    # Eligibility logic
+    if F1 == 'no':
+        result['screening_status'] = SurveyResponse.SCREENING_TERMINATED
+    elif F1 == 'yes' and F2 == 'no':
+        result['screening_status'] = SurveyResponse.SCREENING_ELIGIBLE
+    elif F1 == 'yes' and F2 == 'yes' and F3 == 'yes':
+        result['screening_status'] = SurveyResponse.SCREENING_TERMINATED
+    elif F1 == 'yes' and F2 == 'yes' and F3 == 'no':
+        result['screening_status'] = SurveyResponse.SCREENING_ELIGIBLE
+    else:
+        # Filtr to'liq emas — eligible deb qabul qilamiz (frontda davom etishi mumkin emas)
+        result['screening_status'] = SurveyResponse.SCREENING_ELIGIBLE
+
+    return result
+
+
 def _extract_location(payload: dict) -> dict:
     """JSON payload dan GPS ma'lumotlarini xavfsiz tarzda ajratib olish."""
     loc = payload.get('location') or {}
@@ -67,14 +116,19 @@ def _extract_summary(survey_type: str, payload: dict) -> dict:
     if survey_type == SurveyResponse.SURVEY_INBOUND:
         summary['country'] = payload.get('q1', '') or ''
         summary['purpose'] = payload.get('q3', '') or ''
-        try:
-            n = payload.get('q5_nights')
-            if n in (None, ''):
-                summary['nights'] = 0 if payload.get('q5_zero') else None
-            else:
-                summary['nights'] = int(n)
-        except (TypeError, ValueError):
-            summary['nights'] = None
+        # Transit yo'lida q5 yo'q — 0 tunlar; employment yo'lida q5 mavjud
+        purpose = summary['purpose']
+        if purpose == 'transit':
+            summary['nights'] = 0
+        else:
+            try:
+                n = payload.get('q5_nights')
+                if n in (None, ''):
+                    summary['nights'] = 0 if payload.get('q5_zero') else None
+                else:
+                    summary['nights'] = int(n)
+            except (TypeError, ValueError):
+                summary['nights'] = None
         try:
             summary['total_spent'] = float(payload.get('q16_sum')) if payload.get('q16_sum') else None
         except (TypeError, ValueError):
@@ -88,6 +142,7 @@ def _extract_summary(survey_type: str, payload: dict) -> dict:
             n = payload.get('q4_val')
             if n in (None, ''):
                 n = payload.get('q4_nights')
+            # Outbound'da employment qisqartirilgan oqim — q4 ham bor
             summary['nights'] = int(n) if n not in (None, '') else None
         except (TypeError, ValueError):
             summary['nights'] = None
@@ -135,6 +190,7 @@ def submit_public(request, survey_type):
 
     summary = _extract_summary(survey_type, answers)
     location = _extract_location(payload)
+    screening = _extract_screening(payload)
 
     response = SurveyResponse.objects.create(
         survey_type=survey_type,
@@ -147,6 +203,7 @@ def submit_public(request, survey_type):
         user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
         **summary,
         **location,
+        **screening,
     )
     return JsonResponse({'ok': True, 'id': str(response.id)})
 
@@ -187,6 +244,7 @@ def submit_staff(request, survey_type):
     language = payload.get('language', 'uz')[:5]
     summary = _extract_summary(survey_type, answers)
     location = _extract_location(payload)
+    screening = _extract_screening(payload)
 
     postal_office = None
     try:
@@ -207,6 +265,7 @@ def submit_staff(request, survey_type):
         user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
         **summary,
         **location,
+        **screening,
     )
     return JsonResponse({'ok': True, 'id': str(response.id)})
 

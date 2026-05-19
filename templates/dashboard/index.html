@@ -17,6 +17,7 @@
   <div class="sb-right">
     {% if user.is_superuser %}
       <a href="{% url 'dashboard:admin_reports' %}">📈 Hisobotlar</a>
+      <a href="{% url 'dashboard:monitoring' %}">🔍 Monitoring</a>
       <a href="{% url 'admin:index' %}">⚙ Admin panel</a>
     {% endif %}
     <a href="{% url 'home' %}">🏠 Bosh sahifa</a>

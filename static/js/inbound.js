@@ -163,6 +163,37 @@
     }
   };
 
+  // ==================== SCREENING TEXT ====================
+  var SC_TEXT = {
+    en: {
+      header: '🔍 Screening questions',
+      F1: 'F1. Was your visit to Uzbekistan for less than 12 months?',
+      F2: 'F2. Do you belong to one of the following categories: diplomat, consular officer, military service member, refugee, or transport crew member?',
+      F3: 'F3. Is this visit related to your official duties?',
+      yes: 'Yes',
+      no: 'No',
+      terminate: 'Thank you for your interest. Unfortunately, you are not eligible for this survey.',
+      continueBtn: 'Continue to main survey →',
+      back: 'Back to Home',
+    },
+    ru: {
+      header: '🔍 Отборочные вопросы',
+      F1: 'А. Продолжительность Вашего визита в Узбекистан составляет менее 12 месяцев?',
+      F2: 'В. Относитесь ли Вы к одной из следующих категорий: дипломат, консульское должностное лицо, военнослужащий, беженец или член экипажа транспортного средства?',
+      F3: 'С. Связан ли данный визит с выполнением Ваших официальных обязанностей?',
+      yes: 'Да',
+      no: 'Нет',
+      terminate: 'Спасибо за Ваш интерес. К сожалению, Вы не соответствуете критериям данного опроса.',
+      continueBtn: 'Продолжить основной опрос →',
+      back: 'На главную',
+    },
+  };
+
+  // ==================== SCREENING STATE ====================
+  var scAnswers = { F1: null, F2: null, F3: null };
+  var scTerminated = false;
+  window.__scAnswers = scAnswers;
+
   // ==================== BUILD SEQUENCE ====================
   function buildSeq() {
     var seq = ['q1','q2','q3'];
@@ -203,18 +234,96 @@
     el = document.getElementById('wlc-text'); if (el) el.textContent = l.welcome_text;
     el = document.getElementById('wlc-conf'); if (el) el.textContent = l.welcome_conf;
     el = document.getElementById('btn-start'); if (el) el.textContent = l.start;
+    // Screening sahifasi tarjimasini ham yangilash
+    if (typeof scRender === 'function') {
+      try { scRender(); } catch (e) { /* sahifa hali yuklanmagan bo'lishi mumkin */ }
+    }
   }
   window.setLang = setLang;
 
   function startSurvey() {
+    // Yangi mantiq: START → screening sahifasi (page-screening)
     resetAnswers();
+    submitted = false;
+    scReset();
+    goTo('page-screening');
+    window.scrollTo(0, 0);
+  }
+  window.startSurvey = startSurvey;
+
+  // ==================== SCREENING LOGIC ====================
+  function scReset() {
+    scAnswers.F1 = null; scAnswers.F2 = null; scAnswers.F3 = null;
+    scTerminated = false;
+    scRender();
+  }
+  window.scReset = scReset;
+
+  function scRender() {
+    var tx = SC_TEXT[currentLang] || SC_TEXT.en;
+    var headerEl = document.getElementById('sc-header');
+    if (headerEl) headerEl.textContent = tx.header;
+
+    ['F1', 'F2', 'F3'].forEach(function (q) {
+      var titleEl = document.getElementById('sc-title-' + q);
+      if (titleEl) titleEl.textContent = tx[q];
+      var yEl = document.getElementById('sc-' + q + '-yes');
+      var nEl = document.getElementById('sc-' + q + '-no');
+      if (yEl) { yEl.textContent = tx.yes; yEl.className = 'sc-yn-btn' + (scAnswers[q] === 'yes' ? ' sel-yes' : ''); }
+      if (nEl) { nEl.textContent = tx.no; nEl.className = 'sc-yn-btn' + (scAnswers[q] === 'no' ? ' sel-no' : ''); }
+    });
+
+    // F2 only if F1=yes; F3 only if F1=yes & F2=yes
+    var qF2 = document.getElementById('sc-qF2');
+    var qF3 = document.getElementById('sc-qF3');
+    if (qF2) qF2.style.display = scAnswers.F1 === 'yes' ? '' : 'none';
+    if (qF3) qF3.style.display = (scAnswers.F1 === 'yes' && scAnswers.F2 === 'yes') ? '' : 'none';
+
+    var resultEl = document.getElementById('sc-result');
+    if (!resultEl) return;
+    resultEl.innerHTML = '';
+
+    if (scTerminated) {
+      resultEl.innerHTML = '<div class="sc-result-terminate">' + tx.terminate + '</div>';
+      document.querySelectorAll('.sc-yn-btn').forEach(function (b) { b.classList.add('sc-disabled'); });
+    } else if (
+      (scAnswers.F1 === 'yes' && scAnswers.F2 === 'no') ||
+      (scAnswers.F1 === 'yes' && scAnswers.F2 === 'yes' && scAnswers.F3 === 'no')
+    ) {
+      resultEl.innerHTML =
+        '<div class="sc-result-eligible">' +
+        '<button class="btn-sc-continue" onclick="startMainSurvey()">' + tx.continueBtn + '</button>' +
+        '</div>';
+    }
+
+    var backLbl = document.getElementById('sc-back-label');
+    if (backLbl) backLbl.textContent = tx.back;
+  }
+  window.scRender = scRender;
+
+  function scAnswer(q, val) {
+    if (scTerminated) return;
+    scAnswers[q] = val;
+    if (q === 'F1') { scAnswers.F2 = null; scAnswers.F3 = null; }
+    if (q === 'F2') { scAnswers.F3 = null; }
+    scTerminated = false;
+    if (scAnswers.F1 === 'no') scTerminated = true;
+    if (scAnswers.F1 === 'yes' && scAnswers.F2 === 'yes' && scAnswers.F3 === 'yes') scTerminated = true;
+    scRender();
+  }
+  window.scAnswer = scAnswer;
+
+  function startMainSurvey() {
     currentQIdx = 0;
     submitted = false;
     renderQ();
     goTo('page-survey');
     window.scrollTo(0, 0);
   }
-  window.startSurvey = startSurvey;
+  window.startMainSurvey = startMainSurvey;
+
+  function scGoHome() { goTo('page-lang'); }
+  window.scGoHome = scGoHome;
 
   function prevQ() {
     if (currentQIdx > 0) { currentQIdx--; renderQ(); scrollToTop(); }
@@ -861,6 +970,7 @@
           answers: answers,
           language: currentLang,
           location: null,
+          screening: scAnswers,
         }),
       }).then(function (res) {
         if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -910,6 +1020,7 @@
           answers: answers,
           language: currentLang,
           location: location,
+          screening: scAnswers,
         }),
       });
     }).then(function (res) {
