@@ -911,7 +911,12 @@ def _money_buckets(amounts):
 
 
 def _analyze_inbound(qs):
-    """Inbound so'rovnomalari uchun har bir savol bo'yicha statistika."""
+    """Inbound so'rovnomalari uchun har bir savol bo'yicha statistika.
+
+    Performance: faqat `data` JSON maydonini olamiz va iterator() bilan
+    katta querysetni xotiraga butunlay yuklamasdan o'tamiz.
+    """
+    qs = qs.only('data').iterator(chunk_size=500)
     stats = {}
     countries = Counter()
     purposes = Counter()
@@ -1053,6 +1058,7 @@ def _analyze_inbound(qs):
 
 def _analyze_outbound(qs):
     """Outbound so'rovnomalari uchun har bir savol bo'yicha statistika."""
+    qs = qs.only('data').iterator(chunk_size=500)
     stats = {}
     countries = Counter()
     purposes = Counter()
