@@ -12,6 +12,8 @@ from django.utils import timezone
 from accounts.decorators import staff_required, superuser_required
 from accounts.models import PostalOffice
 from surveys.models import SurveyResponse
+from surveys.utils import device_fingerprint, ip_to_subnet24
+from .fraud import evaluate_all, aggregate_risk_summary
 
 
 # ============================================
@@ -379,6 +381,8 @@ def export_excel(request):
         'Filtr holati', 'F1', 'F2', 'F3',
         'GPS bormi', 'Latitude', 'Longitude', 'GPS aniqlik (m)', 'Google Maps',
         'Boshlangan', 'Yakunlangan', 'IP', 'User-Agent',
+        'Device turi', 'OS', 'Brauzer', 'Device screen', 'Device platform',
+        'Device til', 'Device timezone', "To'ldirish (ms)",
     ]
     ws.append(headers)
     style_header_row(ws)
@@ -397,6 +401,7 @@ def export_excel(request):
                 staff_full = r.staff.get_full_name() or r.staff.username
 
         sc = r.screening_data or {}
+        di = r.device_info or {}
         ws.append([
             idx,
             str(r.id),
@@ -426,6 +431,14 @@ def export_excel(request):
             r.completed_at.strftime('%Y-%m-%d %H:%M:%S') if r.completed_at else '',
             r.ip_address or '',
             (r.user_agent or '')[:150],
+            r.device_type or '',
+            r.os_name or '',
+            r.browser_name or '',
+            di.get('screen', '') if isinstance(di, dict) else '',
+            di.get('platform', '') if isinstance(di, dict) else '',
+            di.get('language', '') if isinstance(di, dict) else '',
+            di.get('timezone', '') if isinstance(di, dict) else '',
+            r.fill_duration_ms if r.fill_duration_ms else '',
         ])
 
     # Google Maps ustunini hyperlink qilish
@@ -1185,6 +1198,8 @@ def monitoring(request):
     total = qs.count()
     inbound_total = inbound_qs.count()
     outbound_total = outbound_qs.count()
+    public_total = qs.filter(source=SurveyResponse.SOURCE_PUBLIC).count()
+    staff_total = qs.filter(source=SurveyResponse.SOURCE_STAFF).count()
 
     # Screening taqsimoti
     screening_dist = list(
@@ -1197,14 +1212,50 @@ def monitoring(request):
         qs.values('language').annotate(c=Count('id')).order_by('-c')
     )
 
-    # Har bir savol bo'yicha tahlil
-    inbound_stats = _analyze_inbound(inbound_qs) if inbound_total else None
-    outbound_stats = _analyze_outbound(outbound_qs) if outbound_total else None
+    # Har bir savol bo'yicha tahlil — manba bo'yicha alohida
+    def _analyze_split(base_qs, analyzer):
+        total = base_qs.count()
+        if not total:
+            return None
+        public_qs = base_qs.filter(source=SurveyResponse.SOURCE_PUBLIC)
+        staff_qs = base_qs.filter(source=SurveyResponse.SOURCE_STAFF)
+        result = {
+            'all': analyzer(base_qs),
+            'all_total': total,
+            'public_total': public_qs.count(),
+            'staff_total': staff_qs.count(),
+        }
+        result['public'] = analyzer(public_qs) if result['public_total'] else None
+        result['staff'] = analyzer(staff_qs) if result['staff_total'] else None
+        return result
+
+    inbound_stats = _analyze_split(inbound_qs, _analyze_inbound)
+    outbound_stats = _analyze_split(outbound_qs, _analyze_outbound)
+
+    # ============================================
+    # IP tahlil
+    # ============================================
+    ip_stats = _analyze_ips(qs)
+
+    # ============================================
+    # Device tahlil
+    # ============================================
+    device_stats = _analyze_devices(qs)
+
+    # ============================================
+    # Fraud / Risk hisobi
+    # ============================================
+    postal_office_coords = {}  # office_id → (lat, lon) — agar saqlangan bo'lsa
+    # PostalOffice modelda lat/lon saqlanmagan (faqat address) — bu lekin foydali bo'lardi
+    risks = evaluate_all(qs, postal_office_coords=postal_office_coords, only_risky=True, top_n=100)
+    risk_summary = aggregate_risk_summary(risks)
 
     context = {
         'total': total,
         'inbound_total': inbound_total,
         'outbound_total': outbound_total,
+        'public_total': public_total,
+        'staff_total': staff_total,
         'screening_dist': screening_dist,
         'languages_dist': languages_dist,
         'inbound_stats': inbound_stats,
@@ -1213,6 +1264,10 @@ def monitoring(request):
         'outbound_q_labels': OUTBOUND_Q_LABELS,
         'offices': PostalOffice.objects.filter(is_active=True),
         'languages_choices': SurveyResponse.LANGUAGES,
+        'ip_stats': ip_stats,
+        'device_stats': device_stats,
+        'risks': risks,
+        'risk_summary': risk_summary,
         'filters': {
             'from': date_from or '',
             'to': date_to or '',
@@ -1223,3 +1278,213 @@ def monitoring(request):
         },
     }
     return render(request, 'dashboard/monitoring.html', context)
+
+
+# ============================================
+# IP & Device analytics
+# ============================================
+
+def _analyze_ips(qs, top_n=30):
+    """IP bo'yicha tahlil: har IP uchun source, type, devices, staff loginlari."""
+    ip_data = {}
+    iterable = qs.only(
+        'ip_address', 'source', 'survey_type', 'device_type', 'os_name',
+        'started_at', 'staff_id', 'staff__username', 'country', 'device_info',
+    ).select_related('staff').iterator(chunk_size=500)
+
+    for r in iterable:
+        ip = r.ip_address or ''
+        if not ip:
+            continue
+        if ip not in ip_data:
+            ip_data[ip] = {
+                'ip': ip,
+                'subnet': ip_to_subnet24(ip),
+                'total': 0,
+                'public': 0,
+                'staff': 0,
+                'inbound': 0,
+                'outbound': 0,
+                'devices': Counter(),
+                'os': Counter(),
+                'countries': Counter(),
+                'staff_logins': set(),
+                'first_seen': None,
+                'last_seen': None,
+                'suspicious': False,
+                'reasons': [],
+            }
+        d = ip_data[ip]
+        d['total'] += 1
+        d[r.source] += 1
+        if r.survey_type == SurveyResponse.SURVEY_INBOUND:
+            d['inbound'] += 1
+        else:
+            d['outbound'] += 1
+        if r.device_type: d['devices'][r.device_type] += 1
+        if r.os_name: d['os'][r.os_name] += 1
+        if r.country: d['countries'][r.country] += 1
+        if r.staff_id and r.staff:
+            # tuple: (id, username) — template'da link qilish uchun
+            d['staff_logins'].add((r.staff_id, r.staff.username or f"user#{r.staff_id}"))
+        if r.started_at:
+            if d['first_seen'] is None or r.started_at < d['first_seen']:
+                d['first_seen'] = r.started_at
+            if d['last_seen'] is None or r.started_at > d['last_seen']:
+                d['last_seen'] = r.started_at
+
+    # Shubhali belgilash
+    for ip, d in ip_data.items():
+        reasons = []
+        if d['public'] > 0 and d['staff'] > 0:
+            reasons.append("Staff va public bir IP'da")
+        if d['public'] >= 10:
+            reasons.append(f"{d['public']} ta public so'rovnoma (yuqori hajm)")
+        if len(d['countries']) >= 5 and d['public'] > 0:
+            reasons.append(f"{len(d['countries'])} ta turli davlat — shubhali")
+        d['reasons'] = reasons
+        d['suspicious'] = bool(reasons)
+        d['unique_countries'] = len(d['countries'])
+        # tuplelarni sort qilamiz username bo'yicha
+        d['staff_logins'] = sorted(d['staff_logins'], key=lambda x: x[1])
+
+    # Sort: shubhali avval, keyin total DESC
+    items = list(ip_data.values())
+    items.sort(key=lambda x: (not x['suspicious'], -x['total']))
+    return {
+        'top': items[:top_n],
+        'total_unique_ips': len(ip_data),
+        'suspicious_count': sum(1 for d in ip_data.values() if d['suspicious']),
+        'shared_ips_count': sum(1 for d in ip_data.values() if d['public'] > 0 and d['staff'] > 0),
+        'high_volume_count': sum(1 for d in ip_data.values() if d['public'] >= 10),
+    }
+
+
+@superuser_required
+def monitoring_staff_detail(request, staff_id):
+    """Bir xodim bo'yicha to'liq monitoring (IP, device, GPS, takrorlangan).
+
+    Faqat superuser kira oladi.
+    """
+    from django.contrib.auth.models import User
+    from django.shortcuts import get_object_or_404
+
+    staff_user = get_object_or_404(User, id=staff_id)
+    qs = SurveyResponse.objects.filter(staff=staff_user, is_completed=True)
+
+    total = qs.count()
+    if total == 0:
+        return render(request, 'dashboard/monitoring_staff.html', {
+            'staff_user': staff_user, 'total': 0,
+        })
+
+    # Asosiy taqsimotlar
+    by_type = list(qs.values('survey_type').annotate(c=Count('id')).order_by('-c'))
+    by_lang = list(qs.values('language').annotate(c=Count('id')).order_by('-c'))
+
+    # IP'lar
+    ip_counter = Counter()
+    device_counter = Counter()
+    os_counter = Counter()
+    browser_counter = Counter()
+    fingerprints = Counter()
+    durations = []
+    gps_points = []
+
+    iterable = qs.only(
+        'ip_address', 'device_type', 'os_name', 'browser_name',
+        'device_info', 'fill_duration_ms', 'latitude', 'longitude',
+        'started_at', 'survey_type', 'country',
+    ).iterator(chunk_size=500)
+    for r in iterable:
+        if r.ip_address: ip_counter[r.ip_address] += 1
+        if r.device_type: device_counter[r.device_type] += 1
+        if r.os_name: os_counter[r.os_name] += 1
+        if r.browser_name: browser_counter[r.browser_name] += 1
+        fp = device_fingerprint(r.device_info or {})
+        if fp: fingerprints[fp] += 1
+        if r.fill_duration_ms: durations.append(r.fill_duration_ms)
+        if r.latitude is not None and r.longitude is not None:
+            gps_points.append({
+                'lat': float(r.latitude),
+                'lon': float(r.longitude),
+                'date': r.started_at.strftime('%Y-%m-%d %H:%M') if r.started_at else '',
+                'type': r.survey_type,
+                'country': r.country or '',
+            })
+
+    # Pochta bo'limi yaqindan masofa hisobi (agar pochta bo'limining GPS si mavjud bo'lsa)
+    avg_duration_ms = round(sum(durations) / len(durations)) if durations else 0
+
+    # Recent so'rovnomalar (50 ta)
+    recent = list(
+        qs.select_related('postal_office').order_by('-started_at')[:50]
+    )
+
+    # Fraud detection (faqat shu staff'ning yozuvlari uchun) — meaningful emas,
+    # chunki staff bir o'zining yozuvlari evaluator'da staff_public_same_ip ni sezmaydi
+    # Lekin biz uni qo'shsa-qo'shmasak ham foydali.
+
+    # IP'lar — public so'rovnomalar bilan kross-reference
+    public_qs = SurveyResponse.objects.filter(
+        is_completed=True, source=SurveyResponse.SOURCE_PUBLIC,
+    )
+    public_ips = set(
+        public_qs.filter(ip_address__in=list(ip_counter.keys()))
+        .values_list('ip_address', flat=True).distinct()
+    )
+    suspicious_ips = sorted(
+        [(ip, cnt) for ip, cnt in ip_counter.items() if ip in public_ips],
+        key=lambda x: -x[1],
+    )
+
+    context = {
+        'staff_user': staff_user,
+        'total': total,
+        'by_type': by_type,
+        'by_lang': by_lang,
+        'ip_list': ip_counter.most_common(20),
+        'device_list': device_counter.most_common(),
+        'os_list': os_counter.most_common(),
+        'browser_list': browser_counter.most_common(),
+        'fingerprint_list': fingerprints.most_common(10),
+        'avg_duration_ms': avg_duration_ms,
+        'avg_duration_sec': round(avg_duration_ms / 1000) if avg_duration_ms else 0,
+        'gps_points': gps_points,
+        'recent': recent,
+        'suspicious_ips': suspicious_ips,
+        'staff_profile': getattr(staff_user, 'staff_profile', None),
+    }
+    return render(request, 'dashboard/monitoring_staff.html', context)
+
+
+def _analyze_devices(qs):
+    """Device turi, OS, brauzer bo'yicha tahlil."""
+    device_types = Counter()
+    os_dist = Counter()
+    browsers = Counter()
+    by_source = defaultdict(Counter)  # (source, device_type)
+    fingerprints = Counter()
+    iterable = qs.only(
+        'device_type', 'os_name', 'browser_name', 'source', 'device_info',
+    ).iterator(chunk_size=500)
+    for r in iterable:
+        dt = r.device_type or 'unknown'
+        device_types[dt] += 1
+        if r.os_name: os_dist[r.os_name] += 1
+        if r.browser_name: browsers[r.browser_name] += 1
+        by_source[r.source][dt] += 1
+        fp = device_fingerprint(r.device_info or {})
+        if fp: fingerprints[fp] += 1
+
+    reused_devices = [(fp, count) for fp, count in fingerprints.most_common(20) if count >= 3]
+
+    return {
+        'device_types': [{'label': k, 'count': v} for k, v in device_types.most_common()],
+        'os': [{'label': k, 'count': v} for k, v in os_dist.most_common(10)],
+        'browsers': [{'label': k, 'count': v} for k, v in browsers.most_common(10)],
+        'by_source_public': dict(by_source.get('public', {})),
+        'by_source_staff': dict(by_source.get('staff', {})),
+        'reused_devices': [{'fp': fp, 'count': c} for fp, c in reused_devices],
+        'total_unique_devices': len(fingerprints),
+    }

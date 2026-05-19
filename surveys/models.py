@@ -100,8 +100,38 @@ class SurveyResponse(models.Model):
     completed_at = models.DateTimeField("Yakunlangan", null=True, blank=True)
     is_completed = models.BooleanField("Yakunlanganmi", default=False, db_index=True)
 
-    ip_address = models.GenericIPAddressField("IP manzil", null=True, blank=True)
+    ip_address = models.GenericIPAddressField("IP manzil", null=True, blank=True, db_index=True)
     user_agent = models.CharField("User-Agent", max_length=500, blank=True)
+
+    # Device fingerprint (frontend yuboradi)
+    device_info = models.JSONField(
+        "Device info (JSON)",
+        default=dict, blank=True,
+        help_text="{screen, platform, language, timezone, ua}",
+    )
+    # Parsed UA (kategoriya — analytics uchun)
+    DEVICE_MOBILE = 'mobile'
+    DEVICE_TABLET = 'tablet'
+    DEVICE_DESKTOP = 'desktop'
+    DEVICE_BOT = 'bot'
+    DEVICE_UNKNOWN = 'unknown'
+    DEVICE_TYPES = [
+        (DEVICE_MOBILE, 'Mobile'),
+        (DEVICE_TABLET, 'Tablet'),
+        (DEVICE_DESKTOP, 'Desktop'),
+        (DEVICE_BOT, 'Bot/Crawler'),
+        (DEVICE_UNKNOWN, "Noma'lum"),
+    ]
+    device_type = models.CharField(
+        "Device turi", max_length=10, choices=DEVICE_TYPES,
+        default=DEVICE_UNKNOWN, db_index=True, blank=True,
+    )
+    os_name = models.CharField("OS", max_length=30, blank=True, db_index=True)
+    browser_name = models.CharField("Brauzer", max_length=30, blank=True)
+    fill_duration_ms = models.PositiveIntegerField(
+        "To'ldirish vaqti (ms)", null=True, blank=True,
+        help_text="Boshlangandan tugaganga qadar millisekund",
+    )
 
     # GPS — so'rovnoma yakunlanganda olingan (foydalanuvchi ruxsat bersa)
     latitude = models.DecimalField("Kenglik (latitude)", max_digits=10, decimal_places=7,

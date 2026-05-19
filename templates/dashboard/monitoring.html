@@ -14,19 +14,40 @@
   }
   .mon-tab.active { background:var(--navy); color:#fff; border-color:var(--navy); }
   .mon-tab:hover:not(.active) { border-color:var(--blue); color:var(--blue); }
+  .mon-tab.danger.active { background:var(--red); border-color:var(--red); }
+  .mon-tab .badge {
+    margin-left: 6px; background: rgba(255,255,255,0.25); padding: 2px 8px;
+    border-radius: 30px; font-size: 11px;
+  }
+  .mon-tab:not(.active) .badge { background: #eef3fa; color: var(--blue); }
   .mon-section { display:none; }
   .mon-section.active { display:block; animation:fadeIn .3s ease; }
   @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  /* Source sub-tabs (Public/Staff) — har Inbound/Outbound ichida */
+  .src-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+  .src-tab {
+    padding: 6px 14px; border-radius: 20px; border: 1.5px solid #d0dde8;
+    background: #fff; cursor: pointer; font-family: 'Nunito', sans-serif;
+    font-weight: 700; font-size: 12px; color: var(--muted); transition: all .15s;
+  }
+  .src-tab.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .src-pane { display: none; }
+  .src-pane.active { display: block; }
+
+  /* Question blocks */
   .q-block { background:#fff; border-radius:14px; padding:18px 20px; margin-bottom:14px;
     box-shadow:0 2px 10px rgba(15,58,110,.06); border-left:4px solid var(--blue); }
   .q-block h3 { color:var(--navy); font-size:15px; font-weight:800; margin-bottom:12px;
-    display:flex; align-items:center; justify-content:space-between; }
+    display:flex; align-items:center; justify-content:space-between; gap: 12px; }
   .q-block h3 .q-count { background:var(--blue); color:#fff; font-size:11px;
     padding:2px 10px; border-radius:30px; font-weight:700; }
+
   .q-stat-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px; }
   .q-stat-item { background:#f7faff; border-radius:10px; padding:10px 12px; }
   .q-stat-item .lbl { font-size:11px; color:var(--muted); font-weight:600; margin-bottom:3px; }
   .q-stat-item .val { font-size:13px; color:var(--navy); font-weight:800; }
+
   .q-bar-list { display:flex; flex-direction:column; gap:5px; }
   .q-bar-row { display:flex; align-items:center; gap:10px; font-size:12px; }
   .q-bar-row .lbl { flex:1; color:var(--text); font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -34,6 +55,7 @@
   .q-bar-row .bar-fill { position:absolute; top:0; left:0; height:100%;
     background:linear-gradient(90deg, var(--blue) 0%, #4a90e2 100%); border-radius:5px; }
   .q-bar-row .val { font-size:12px; font-weight:800; color:var(--navy); min-width:48px; text-align:right; }
+
   .rating-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px; }
   .rating-item {
     background:#f7faff; border-radius:10px; padding:10px 14px;
@@ -44,7 +66,91 @@
   .rating-item .avg { font-size:20px; font-weight:900; color:var(--blue); }
   .rating-item .meta { font-size:10px; color:var(--muted); text-align:right; line-height:1.4; }
   .empty-q { color:var(--muted); font-size:13px; padding:14px; text-align:center; background:#f7faff; border-radius:8px; }
+
   .summary-cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:18px; }
+
+  /* IP analytics jadvali */
+  .ip-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ip-table thead th {
+    background: var(--navy); color: #fff; padding: 8px 10px;
+    font-size: 11px; font-weight: 700; text-align: left;
+    position: sticky; top: 0; z-index: 1;
+  }
+  .ip-table tbody td { padding: 8px 10px; border-bottom: 1px solid #eef3fa; }
+  .ip-table tbody tr:hover { background: #f7faff; }
+  .ip-table tbody tr.suspicious { background: #fff5f5; }
+  .ip-table tbody tr.suspicious:hover { background: #ffe9e9; }
+  .ip-mono { font-family: monospace; font-size: 12px; color: var(--navy); }
+  .ip-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 10px; font-weight: 700; margin-right: 3px;
+  }
+  .ip-badge.public { background: #e3f2fd; color: #0d47a1; }
+  .ip-badge.staff { background: #fff3e0; color: #e65100; }
+  .ip-badge.inbound { background: #e8f5e9; color: #2e7d32; }
+  .ip-badge.outbound { background: #f3e5f5; color: #6a1b9a; }
+  .ip-badge.danger { background: var(--red); color: #fff; }
+
+  /* Risk darajalari */
+  .risk-row { background: #fff; border-radius: 10px; padding: 14px 16px;
+    margin-bottom: 10px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); border-left: 5px solid; }
+  .risk-row.critical { border-left-color: #c0392b; background: #fff5f5; }
+  .risk-row.high     { border-left-color: #e74c3c; background: #fef4f0; }
+  .risk-row.medium   { border-left-color: #f39c12; background: #fffbf0; }
+  .risk-row.low      { border-left-color: #f1c40f; background: #fffef0; }
+  .risk-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+  .risk-score {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 48px; height: 36px; padding: 0 12px;
+    border-radius: 18px; font-weight: 900; font-size: 14px; color: #fff;
+  }
+  .risk-score.critical { background: #c0392b; }
+  .risk-score.high     { background: #e74c3c; }
+  .risk-score.medium   { background: #f39c12; }
+  .risk-score.low      { background: #d4a017; }
+  .risk-meta { font-size: 11px; color: var(--muted); }
+  .risk-meta strong { color: var(--text); }
+  .risk-reasons { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+  .risk-reason {
+    background: rgba(255,255,255,0.7); border-radius: 6px;
+    padding: 6px 10px; font-size: 12px; color: var(--text);
+    border-left: 3px solid #d0deee;
+  }
+  .risk-reason.critical { border-left-color: #c0392b; }
+  .risk-reason.high     { border-left-color: #e74c3c; }
+  .risk-reason.medium   { border-left-color: #f39c12; }
+  .risk-reason .detail { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+  .risk-cards {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px; margin-bottom: 16px;
+  }
+  .risk-card {
+    background: #fff; border-radius: 12px; padding: 14px;
+    text-align: center; border-top: 4px solid;
+  }
+  .risk-card.critical { border-top-color: #c0392b; }
+  .risk-card.high     { border-top-color: #e74c3c; }
+  .risk-card.medium   { border-top-color: #f39c12; }
+  .risk-card.low      { border-top-color: #f1c40f; }
+  .risk-card.ok       { border-top-color: var(--green); }
+  .risk-card .num { font-size: 24px; font-weight: 900; color: var(--navy); }
+  .risk-card .lbl { font-size: 11px; color: var(--muted); font-weight: 700; }
+
+  /* Device tahlil */
+  .device-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .device-card {
+    background: #fff; border-radius: 12px; padding: 16px;
+    box-shadow: 0 2px 8px rgba(15,58,110,0.05);
+  }
+  .device-card h4 { color: var(--navy); font-size: 13px; font-weight: 800; margin-bottom: 10px; }
+
+  /* IP suspicious reason chiplari */
+  .reason-chip {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    background: #fff0f0; color: var(--red); font-size: 10px;
+    font-weight: 700; margin: 1px 2px;
+  }
 </style>
 {% endblock %}
 
@@ -52,7 +158,7 @@
 <div class="staff-bar">
   <div class="sb-left">
     <span class="sb-logo">🔍 MONITORING</span>
-    <span class="sb-meta">Har bir savol bo'yicha tahlil</span>
+    <span class="sb-meta">Har bir savol + IP + Device + Risk tahlili</span>
   </div>
   <div class="sb-right">
     <a href="{% url 'dashboard:index' %}">📊 Dashboard</a>
@@ -67,7 +173,7 @@
   <div class="dash-h">
     <div>
       <div class="breadcrumb">Dashboard / Monitoring</div>
-      <h1>🔍 Monitoring (har bir savol bo'yicha)</h1>
+      <h1>🔍 Monitoring</h1>
     </div>
   </div>
 
@@ -139,30 +245,56 @@
       <div class="stat-label">Outbound</div>
       <div class="stat-value">{{ outbound_total|intcomma }}</div>
     </div>
-    {% for s in screening_dist %}
-      <div class="stat-card accent-{% if s.screening_status == 'eligible' %}green{% elif s.screening_status == 'terminated' %}yellow{% else %}navy{% endif %}">
-        <div class="stat-icon">{% if s.screening_status == 'eligible' %}✅{% elif s.screening_status == 'terminated' %}🚫{% else %}⏭{% endif %}</div>
-        <div class="stat-label">
-          {% if s.screening_status == 'eligible' %}Filtr o'tdi
-          {% elif s.screening_status == 'terminated' %}Filtr to'xtatdi
-          {% else %}Filtr yo'q{% endif %}
-        </div>
-        <div class="stat-value">{{ s.c|intcomma }}</div>
-      </div>
-    {% endfor %}
+    <div class="stat-card accent-blue">
+      <div class="stat-icon">🌍</div>
+      <div class="stat-label">Public</div>
+      <div class="stat-value">{{ public_total|intcomma }}</div>
+    </div>
+    <div class="stat-card accent-yellow">
+      <div class="stat-icon">👤</div>
+      <div class="stat-label">Staff</div>
+      <div class="stat-value">{{ staff_total|intcomma }}</div>
+    </div>
+    {% if risks %}
+    <div class="stat-card accent-navy" style="border-top: 3px solid #c0392b;">
+      <div class="stat-icon">🚨</div>
+      <div class="stat-label">Shubhali</div>
+      <div class="stat-value" style="color: #c0392b;">{{ risks|length|intcomma }}</div>
+    </div>
+    {% endif %}
   </div>
 
   <!-- Tablar -->
   <div class="mon-tabs">
-    <button type="button" class="mon-tab active" data-target="tab-inbound">🛬 Inbound ({{ inbound_total }})</button>
-    <button type="button" class="mon-tab" data-target="tab-outbound">🛫 Outbound ({{ outbound_total }})</button>
+    <button type="button" class="mon-tab active" data-target="tab-inbound">🛬 Inbound <span class="badge">{{ inbound_total }}</span></button>
+    <button type="button" class="mon-tab" data-target="tab-outbound">🛫 Outbound <span class="badge">{{ outbound_total }}</span></button>
+    <button type="button" class="mon-tab" data-target="tab-ips">🌐 IP-lar <span class="badge">{{ ip_stats.total_unique_ips }}</span></button>
+    <button type="button" class="mon-tab" data-target="tab-devices">📱 Devicelar <span class="badge">{{ device_stats.total_unique_devices }}</span></button>
+    <button type="button" class="mon-tab danger" data-target="tab-risks">🚨 Riskler <span class="badge">{{ risks|length }}</span></button>
     <button type="button" class="mon-tab" data-target="tab-meta">🌐 Tillar / Filtr</button>
   </div>
 
   <!-- ============ INBOUND ============ -->
   <div class="mon-section active" id="tab-inbound">
     {% if inbound_stats %}
-      {% include 'dashboard/_monitoring_inbound.html' with s=inbound_stats labels=inbound_q_labels total=inbound_total %}
+      <div class="src-tabs">
+        <button type="button" class="src-tab active" data-pane="inbound-all">Hammasi ({{ inbound_stats.all_total }})</button>
+        <button type="button" class="src-tab" data-pane="inbound-public">🌍 Public ({{ inbound_stats.public_total }})</button>
+        <button type="button" class="src-tab" data-pane="inbound-staff">👤 Staff ({{ inbound_stats.staff_total }})</button>
+      </div>
+      <div class="src-pane active" id="inbound-all">
+        {% include 'dashboard/_monitoring_inbound.html' with s=inbound_stats.all labels=inbound_q_labels total=inbound_stats.all_total %}
+      </div>
+      {% if inbound_stats.public %}
+      <div class="src-pane" id="inbound-public">
+        {% include 'dashboard/_monitoring_inbound.html' with s=inbound_stats.public labels=inbound_q_labels total=inbound_stats.public_total %}
+      </div>
+      {% endif %}
+      {% if inbound_stats.staff %}
+      <div class="src-pane" id="inbound-staff">
+        {% include 'dashboard/_monitoring_inbound.html' with s=inbound_stats.staff labels=inbound_q_labels total=inbound_stats.staff_total %}
+      </div>
+      {% endif %}
     {% else %}
       <div class="empty-q">📭 Inbound yozuvlar yo'q.</div>
     {% endif %}
@@ -171,9 +303,206 @@
   <!-- ============ OUTBOUND ============ -->
   <div class="mon-section" id="tab-outbound">
     {% if outbound_stats %}
-      {% include 'dashboard/_monitoring_outbound.html' with s=outbound_stats labels=outbound_q_labels total=outbound_total %}
+      <div class="src-tabs">
+        <button type="button" class="src-tab active" data-pane="outbound-all">Hammasi ({{ outbound_stats.all_total }})</button>
+        <button type="button" class="src-tab" data-pane="outbound-public">🌍 Public ({{ outbound_stats.public_total }})</button>
+        <button type="button" class="src-tab" data-pane="outbound-staff">👤 Staff ({{ outbound_stats.staff_total }})</button>
+      </div>
+      <div class="src-pane active" id="outbound-all">
+        {% include 'dashboard/_monitoring_outbound.html' with s=outbound_stats.all labels=outbound_q_labels total=outbound_stats.all_total %}
+      </div>
+      {% if outbound_stats.public %}
+      <div class="src-pane" id="outbound-public">
+        {% include 'dashboard/_monitoring_outbound.html' with s=outbound_stats.public labels=outbound_q_labels total=outbound_stats.public_total %}
+      </div>
+      {% endif %}
+      {% if outbound_stats.staff %}
+      <div class="src-pane" id="outbound-staff">
+        {% include 'dashboard/_monitoring_outbound.html' with s=outbound_stats.staff labels=outbound_q_labels total=outbound_stats.staff_total %}
+      </div>
+      {% endif %}
     {% else %}
       <div class="empty-q">📭 Outbound yozuvlar yo'q.</div>
+    {% endif %}
+  </div>
+
+  <!-- ============ IP-LAR ============ -->
+  <div class="mon-section" id="tab-ips">
+    <div class="summary-cards">
+      <div class="risk-card ok"><div class="num">{{ ip_stats.total_unique_ips|intcomma }}</div><div class="lbl">Jami unique IP</div></div>
+      <div class="risk-card high"><div class="num" style="color:#e74c3c">{{ ip_stats.suspicious_count|intcomma }}</div><div class="lbl">Shubhali IP</div></div>
+      <div class="risk-card critical"><div class="num" style="color:#c0392b">{{ ip_stats.shared_ips_count|intcomma }}</div><div class="lbl">Staff+Public bir IP</div></div>
+      <div class="risk-card medium"><div class="num" style="color:#f39c12">{{ ip_stats.high_volume_count|intcomma }}</div><div class="lbl">Yuqori hajm IP (10+)</div></div>
+    </div>
+    <div class="q-block">
+      <h3>🌐 IP'lar (top 30) <span class="q-count">{{ ip_stats.top|length }} ko'rsatildi</span></h3>
+      {% if ip_stats.top %}
+      <div style="overflow-x: auto;">
+        <table class="ip-table">
+          <thead>
+            <tr>
+              <th>IP / Subnet</th>
+              <th style="text-align:center">Jami</th>
+              <th style="text-align:center">Public</th>
+              <th style="text-align:center">Staff</th>
+              <th style="text-align:center">Inbound</th>
+              <th style="text-align:center">Outbound</th>
+              <th>Davlatlar</th>
+              <th>Devicelar</th>
+              <th>Staff loginlari</th>
+              <th>Oxirgi sana</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ip in ip_stats.top %}
+            <tr class="{% if ip.suspicious %}suspicious{% endif %}">
+              <td>
+                <div class="ip-mono"><strong>{{ ip.ip }}</strong></div>
+                <div style="color: var(--muted); font-size: 10px;">{{ ip.subnet }}</div>
+              </td>
+              <td style="text-align:center"><strong>{{ ip.total }}</strong></td>
+              <td style="text-align:center">{% if ip.public %}<span class="ip-badge public">{{ ip.public }}</span>{% else %}—{% endif %}</td>
+              <td style="text-align:center">{% if ip.staff %}<span class="ip-badge staff">{{ ip.staff }}</span>{% else %}—{% endif %}</td>
+              <td style="text-align:center">{% if ip.inbound %}<span class="ip-badge inbound">{{ ip.inbound }}</span>{% else %}—{% endif %}</td>
+              <td style="text-align:center">{% if ip.outbound %}<span class="ip-badge outbound">{{ ip.outbound }}</span>{% else %}—{% endif %}</td>
+              <td title="{{ ip.unique_countries }} ta">
+                {{ ip.unique_countries }}{% if ip.unique_countries > 1 %} 🗺{% endif %}
+              </td>
+              <td style="font-size: 10px;">
+                {% for type, count in ip.devices.items %}{{ type }}({{ count }}){% if not forloop.last %} {% endif %}{% endfor %}
+              </td>
+              <td style="font-size: 11px;">
+                {% if ip.staff_logins %}
+                  {% for sid, uname in ip.staff_logins %}
+                    <a href="{% url 'dashboard:monitoring_staff' sid %}" class="ip-badge staff" style="text-decoration: none;">{{ uname }}</a>
+                  {% endfor %}
+                {% else %}—{% endif %}
+              </td>
+              <td style="font-size: 11px;">{{ ip.last_seen|date:"d.m H:i" }}</td>
+              <td>
+                {% if ip.suspicious %}
+                  {% for r in ip.reasons %}<span class="reason-chip">{{ r }}</span>{% endfor %}
+                {% else %}
+                  <span style="color: var(--green); font-size: 11px;">✓ OK</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <div class="empty-q">IP yozuvlar yo'q.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ============ DEVICELAR ============ -->
+  <div class="mon-section" id="tab-devices">
+    <div class="device-grid">
+      <div class="device-card">
+        <h4>📱 Device turi</h4>
+        <div class="q-bar-list">
+          {% for item in device_stats.device_types %}
+            <div class="q-bar-row">
+              <div class="lbl">{{ item.label }}</div>
+              <div class="bar"><div class="bar-fill" style="width:{% widthratio item.count total 100 %}%"></div></div>
+              <div class="val">{{ item.count|intcomma }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="device-card">
+        <h4>💻 Operatsion tizim</h4>
+        <div class="q-bar-list">
+          {% for item in device_stats.os %}
+            <div class="q-bar-row">
+              <div class="lbl">{{ item.label }}</div>
+              <div class="bar"><div class="bar-fill" style="width:{% widthratio item.count total 100 %}%"></div></div>
+              <div class="val">{{ item.count|intcomma }}</div>
+            </div>
+          {% empty %}
+            <div class="empty-q">Ma'lumot yo'q.</div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="device-card">
+        <h4>🌐 Brauzer</h4>
+        <div class="q-bar-list">
+          {% for item in device_stats.browsers %}
+            <div class="q-bar-row">
+              <div class="lbl">{{ item.label }}</div>
+              <div class="bar"><div class="bar-fill" style="width:{% widthratio item.count total 100 %}%"></div></div>
+              <div class="val">{{ item.count|intcomma }}</div>
+            </div>
+          {% empty %}
+            <div class="empty-q">Ma'lumot yo'q.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    {% if device_stats.reused_devices %}
+    <div class="q-block" style="margin-top: 16px; border-left-color: #f39c12;">
+      <h3>⚠️ Takrorlangan devicelar <span class="q-count">3+ marta</span></h3>
+      <div class="q-bar-list">
+        {% for d in device_stats.reused_devices %}
+          <div class="q-bar-row">
+            <div class="lbl" style="font-family: monospace;">{{ d.fp }}</div>
+            <div class="bar"><div class="bar-fill" style="width:{% widthratio d.count total 100 %}%; background: linear-gradient(90deg, #f39c12, #e67e22);"></div></div>
+            <div class="val">{{ d.count }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ============ RISKLAR ============ -->
+  <div class="mon-section" id="tab-risks">
+    {% if risks %}
+      <div class="risk-cards">
+        <div class="risk-card critical"><div class="num" style="color:#c0392b">{{ risk_summary.by_level.critical|default:0 }}</div><div class="lbl">🔴 Critical</div></div>
+        <div class="risk-card high"><div class="num" style="color:#e74c3c">{{ risk_summary.by_level.high|default:0 }}</div><div class="lbl">🟠 High</div></div>
+        <div class="risk-card medium"><div class="num" style="color:#f39c12">{{ risk_summary.by_level.medium|default:0 }}</div><div class="lbl">🟡 Medium</div></div>
+        <div class="risk-card low"><div class="num" style="color:#d4a017">{{ risk_summary.by_level.low|default:0 }}</div><div class="lbl">🟢 Low</div></div>
+      </div>
+
+      {% for item in risks %}
+        <div class="risk-row {{ item.level }}">
+          <div class="risk-head">
+            <div>
+              <div class="risk-meta">
+                <strong>{{ item.response.get_survey_type_display }}</strong>
+                · <strong>{{ item.response.get_source_display }}</strong>
+                · {{ item.response.started_at|date:"d.m.Y H:i" }}
+                {% if item.response.country %}· 🌍 {{ item.response.country }}{% endif %}
+                {% if item.response.staff %}· 👤 <a href="{% url 'dashboard:monitoring_staff' item.response.staff.id %}" style="color: var(--blue); font-weight: 700;">{{ item.response.staff.username }}</a>{% endif %}
+                {% if item.response.postal_office %}· 🏢 {{ item.response.postal_office.code }}{% endif %}
+              </div>
+              <div class="risk-meta" style="margin-top: 4px;">
+                <span class="ip-mono">{{ item.response.ip_address|default:'—' }}</span>
+                · {{ item.response.device_type|default:'—' }} / {{ item.response.os_name|default:'—' }}
+                {% if item.response.fill_duration_ms %}· {{ item.response.fill_duration_ms|floatformat:0 }}ms{% endif %}
+              </div>
+            </div>
+            <div class="risk-score {{ item.level }}">{{ item.score }}</div>
+          </div>
+          <div class="risk-reasons">
+            {% for r in item.reasons %}
+              <div class="risk-reason {{ r.severity }}">
+                <strong>{{ r.label }}</strong>
+                {% if r.detail %}<div class="detail">{{ r.detail }}</div>{% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-q" style="background: #e8f5e9; color: #2e7d32; font-weight: 700;">
+        ✅ Shubhali harakatlar topilmadi. Hammasi toza ko'rinadi.
+      </div>
     {% endif %}
   </div>
 
@@ -223,6 +552,19 @@
       this.classList.add('active');
       document.querySelectorAll('.mon-section').forEach(function(s){ s.classList.remove('active'); });
       document.getElementById(target).classList.add('active');
+    });
+  });
+  // Source sub-tabs
+  document.querySelectorAll('.src-tab').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var pane = this.dataset.pane;
+      var parent = this.closest('.mon-section');
+      if (!parent) return;
+      parent.querySelectorAll('.src-tab').forEach(function(b){ b.classList.remove('active'); });
+      this.classList.add('active');
+      parent.querySelectorAll('.src-pane').forEach(function(p){ p.classList.remove('active'); });
+      var target = document.getElementById(pane);
+      if (target) target.classList.add('active');
     });
   });
 </script>

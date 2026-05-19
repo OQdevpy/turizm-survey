@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Staff monitoring — {{ staff_user.username }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  .ms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  @media (max-width: 900px) { .ms-grid { grid-template-columns: 1fr; } }
+  .ms-card { background: #fff; border-radius: 14px; padding: 18px 20px; box-shadow: 0 2px 8px rgba(15,58,110,0.06); }
+  .ms-card h3 { color: var(--navy); font-size: 14px; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  .ms-stat { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+  .ms-stat-item { background: #f7faff; border-radius: 10px; padding: 10px 14px; min-width: 100px; }
+  .ms-stat-item .lbl { font-size: 11px; color: var(--muted); font-weight: 600; }
+  .ms-stat-item .val { font-size: 18px; font-weight: 900; color: var(--navy); }
+  .ms-bar-list { display: flex; flex-direction: column; gap: 4px; }
+  .ms-bar-row { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+  .ms-bar-row .lbl { flex: 1; color: var(--text); font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ms-bar-row .bar { flex: 2; height: 16px; background: #eef3fa; border-radius: 4px; position: relative; overflow: hidden; }
+  .ms-bar-row .bar-fill { position: absolute; top: 0; left: 0; height: 100%; background: linear-gradient(90deg, var(--blue), #4a90e2); border-radius: 4px; }
+  .ms-bar-row .val { font-size: 12px; font-weight: 800; color: var(--navy); min-width: 36px; text-align: right; }
+  .ms-empty { color: var(--muted); font-size: 13px; padding: 14px; text-align: center; background: #f7faff; border-radius: 8px; }
+  .ms-suspicious-banner {
+    background: linear-gradient(90deg, #fff5f5, #ffebeb);
+    border-left: 5px solid #c0392b;
+    border-radius: 10px; padding: 14px 18px; margin-bottom: 18px;
+  }
+  .ms-suspicious-banner h4 { color: #c0392b; font-size: 14px; font-weight: 900; margin-bottom: 6px; }
+  .ms-recent-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ms-recent-table thead th {
+    background: var(--navy); color: #fff; padding: 8px 10px;
+    font-size: 11px; font-weight: 700; text-align: left;
+  }
+  .ms-recent-table td { padding: 7px 10px; border-bottom: 1px solid #eef3fa; }
+  .ms-recent-table tr:hover { background: #f7faff; }
+  #staff-map { height: 360px; border-radius: 12px; }
+  .ip-mono { font-family: monospace; font-size: 12px; color: var(--navy); }
+  .ip-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 10px; font-weight: 700; margin-right: 3px;
+  }
+  .ip-badge.danger { background: var(--red); color: #fff; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="staff-bar">
+  <div class="sb-left">
+    <span class="sb-logo">👤 STAFF MONITORING</span>
+    <span class="sb-meta">{{ staff_user.username }}</span>
+  </div>
+  <div class="sb-right">
+    <a href="{% url 'dashboard:monitoring' %}">🔍 Monitoring</a>
+    <a href="{% url 'dashboard:index' %}">📊 Dashboard</a>
+    <a href="{% url 'admin:index' %}">⚙ Admin</a>
+    <a href="{% url 'home' %}">🏠 Bosh</a>
+    <a href="{% url 'accounts:logout' %}" class="sb-logout">Chiqish</a>
+  </div>
+</div>
+
+<div class="dash-wrap">
+  <div class="dash-h">
+    <div>
+      <div class="breadcrumb">Dashboard / Monitoring / Staff</div>
+      <h1>👤 {{ staff_user.get_full_name|default:staff_user.username }}</h1>
+      <div style="color: var(--muted); font-size: 13px; margin-top: 4px;">
+        @{{ staff_user.username }}
+        {% if staff_profile %}
+          · 🏢 {{ staff_profile.postal_office.code }} — {{ staff_profile.postal_office.name }}
+          {% if staff_profile.phone %}· 📞 {{ staff_profile.phone }}{% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if total == 0 %}
+    <div class="ms-empty" style="font-size: 15px; padding: 40px;">📭 Bu xodim hali so'rovnoma to'ldirmagan.</div>
+  {% else %}
+    {% if suspicious_ips %}
+      <div class="ms-suspicious-banner">
+        <h4>🚨 Diqqat: shubhali IP'lar topildi</h4>
+        <div style="font-size: 13px; color: var(--text); margin-bottom: 8px;">
+          Bu xodimning <strong>{{ suspicious_ips|length }} ta</strong> IP manzilidan ham public (loginsiz) so'rovnoma yuborilgan.
+          Bu xodim o'zi turist sifatida public so'rovnoma to'ldirgan bo'lishi mumkin.
+        </div>
+        <div>
+          {% for ip, cnt in suspicious_ips %}
+            <span class="ip-badge danger" style="margin: 2px 4px;">{{ ip }} ({{ cnt }} ta)</span>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="ms-stat">
+      <div class="ms-stat-item"><div class="lbl">Jami so'rovnoma</div><div class="val">{{ total|intcomma }}</div></div>
+      {% for t in by_type %}
+        <div class="ms-stat-item">
+          <div class="lbl">{% if t.survey_type == 'inbound' %}🛬 Inbound{% else %}🛫 Outbound{% endif %}</div>
+          <div class="val">{{ t.c|intcomma }}</div>
+        </div>
+      {% endfor %}
+      {% if avg_duration_sec %}
+        <div class="ms-stat-item"><div class="lbl">O'rt. to'ldirish vaqti</div><div class="val">{{ avg_duration_sec }}s</div></div>
+      {% endif %}
+    </div>
+
+    <div class="ms-grid">
+      <!-- IP'lar -->
+      <div class="ms-card">
+        <h3>🌐 IP manzillar (top 20)</h3>
+        <div class="ms-bar-list">
+          {% for ip, count in ip_list %}
+            <div class="ms-bar-row">
+              <div class="lbl ip-mono">{{ ip }}</div>
+              <div class="bar"><div class="bar-fill" style="width:{% widthratio count total 100 %}%"></div></div>
+              <div class="val">{{ count }}</div>
+            </div>
+          {% empty %}
+            <div class="ms-empty">IP saqlanmagan</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Device turi -->
+      <div class="ms-card">
+        <h3>📱 Device taqsimoti</h3>
+        <div class="ms-bar-list">
+          {% for label, count in device_list %}
+            <div class="ms-bar-row">
+              <div class="lbl">{{ label }}</div>
+              <div class="bar"><div class="bar-fill" style="width:{% widthratio count total 100 %}%"></div></div>
+              <div class="val">{{ count }}</div>
+            </div>
+          {% empty %}
+            <div class="ms-empty">Device ma'lumotlari yo'q</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- OS -->
+      <div class="ms-card">
+        <h3>💻 Operatsion tizim</h3>
+        <div class="ms-bar-list">
+          {% for label, count in os_list %}
+            <div class="ms-bar-row">
+              <div class="lbl">{{ label }}</div>
+              <div class="bar"><div class="bar-fill" style="width:{% widthratio count total 100 %}%"></div></div>
+              <div class="val">{{ count }}</div>
+            </div>
+          {% empty %}
+            <div class="ms-empty">OS ma'lumotlari yo'q</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Brauzer -->
+      <div class="ms-card">
+        <h3>🌐 Brauzer</h3>
+        <div class="ms-bar-list">
+          {% for label, count in browser_list %}
+            <div class="ms-bar-row">
+              <div class="lbl">{{ label }}</div>
+              <div class="bar"><div class="bar-fill" style="width:{% widthratio count total 100 %}%"></div></div>
+              <div class="val">{{ count }}</div>
+            </div>
+          {% empty %}
+            <div class="ms-empty">Brauzer ma'lumotlari yo'q</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    {% if fingerprint_list %}
+    <div class="ms-card" style="margin-bottom: 18px;">
+      <h3>📲 Device fingerprintlar (top 10)</h3>
+      <div class="ms-bar-list">
+        {% for fp, count in fingerprint_list %}
+          <div class="ms-bar-row">
+            <div class="lbl ip-mono">{{ fp }}</div>
+            <div class="bar"><div class="bar-fill" style="width:{% widthratio count total 100 %}%; background: linear-gradient(90deg, #9c27b0, #ce93d8);"></div></div>
+            <div class="val">{{ count }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if gps_points %}
+    <div class="ms-card" style="margin-bottom: 18px;">
+      <h3>🗺 GPS xarita ({{ gps_points|length }} ta nuqta)</h3>
+      <div id="staff-map"></div>
+    </div>
+    {% endif %}
+
+    <div class="ms-card">
+      <h3>🕒 Oxirgi 50 ta so'rovnoma</h3>
+      <div style="overflow-x: auto;">
+        <table class="ms-recent-table">
+          <thead>
+            <tr>
+              <th>Vaqt</th>
+              <th>Turi</th>
+              <th>Davlat</th>
+              <th>IP</th>
+              <th>Device</th>
+              <th>OS</th>
+              <th>Vaqt (s)</th>
+              <th>Bo'lim</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in recent %}
+              <tr>
+                <td>{{ r.started_at|date:"d.m H:i" }}</td>
+                <td>{% if r.survey_type == 'inbound' %}🛬{% else %}🛫{% endif %} {{ r.get_survey_type_display }}</td>
+                <td>{{ r.country|default:'—' }}</td>
+                <td class="ip-mono">{{ r.ip_address|default:'—' }}</td>
+                <td>{{ r.device_type|default:'—' }}</td>
+                <td>{{ r.os_name|default:'—' }}</td>
+                <td>{% if r.fill_duration_ms %}{{ r.fill_duration_ms|floatformat:0 }}ms{% else %}—{% endif %}</td>
+                <td>{% if r.postal_office %}{{ r.postal_office.code }}{% else %}—{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if gps_points %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function() {
+  var points = {{ gps_points|safe }};
+  if (!points.length) return;
+  var map = L.map('staff-map').setView([points[0].lat, points[0].lon], 6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
+  var bounds = [];
+  points.forEach(function(p) {
+    var icon = (p.type === 'inbound') ? '🛬' : '🛫';
+    L.marker([p.lat, p.lon], {title: p.date}).addTo(map)
+      .bindPopup('<strong>' + icon + ' ' + p.country + '</strong><br>' + p.date + '<br>(' + p.lat.toFixed(4) + ', ' + p.lon.toFixed(4) + ')');
+    bounds.push([p.lat, p.lon]);
+  });
+  if (bounds.length > 1) map.fitBounds(bounds, {padding: [30, 30]});
+})();
+</script>
+{% endif %}
+{% endblock %}

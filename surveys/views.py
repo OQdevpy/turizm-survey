@@ -10,6 +10,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from accounts.decorators import staff_required
 
 from .models import SurveyResponse
+from .utils import parse_user_agent
 
 
 def _client_ip(request):
@@ -17,6 +18,81 @@ def _client_ip(request):
     if xff:
         return xff.split(',')[0].strip()
     return request.META.get('REMOTE_ADDR')
+
+
+def _extract_device(payload: dict, request) -> dict:
+    """Frontend'dan kelgan device_info ni xavfsiz tarzda olib + UA ni parse qiladi.
+
+    Manbalar:
+    - payload['device_info'] — frontend yuborgan obyekt (sanitize qilinadi)
+    - request.META.HTTP_USER_AGENT — server tomondan ko'ringan UA (zaxira)
+    - payload['fill_duration_ms'] — to'ldirish vaqti
+
+    Qaytaradi: {device_info, device_type, os_name, browser_name, fill_duration_ms, user_agent}
+    """
+    result = {
+        'device_info': {},
+        'device_type': SurveyResponse.DEVICE_UNKNOWN,
+        'os_name': '',
+        'browser_name': '',
+        'fill_duration_ms': None,
+        'user_agent': '',
+    }
+
+    info = payload.get('device_info') or {}
+    if not isinstance(info, dict):
+        info = {}
+
+    # Sanitize: faqat ma'lum maydonlar va ularning uzunliklari
+    clean = {}
+    for key, max_len in (
+        ('ua', 500),
+        ('screen', 30),
+        ('platform', 50),
+        ('language', 20),
+        ('timezone', 50),
+    ):
+        val = info.get(key)
+        if val is None:
+            continue
+        try:
+            clean[key] = str(val)[:max_len]
+        except Exception:
+            pass
+    # bool maydonlar
+    if 'touch' in info:
+        clean['touch'] = bool(info.get('touch'))
+    # raqamli maydonlar
+    for key in ('cores', 'memory'):
+        val = info.get(key)
+        try:
+            if val is not None:
+                clean[key] = max(0, min(int(val), 1024))
+        except (TypeError, ValueError):
+            pass
+    result['device_info'] = clean
+
+    # User-Agent: frontend'dan kelgan (priority) yoki server header'dan
+    ua = clean.get('ua') or request.META.get('HTTP_USER_AGENT', '') or ''
+    ua = ua[:500]
+    result['user_agent'] = ua
+
+    parsed = parse_user_agent(ua)
+    result['device_type'] = parsed['device_type']
+    result['os_name'] = parsed['os_name'][:30]
+    result['browser_name'] = parsed['browser_name'][:30]
+
+    # Fill duration
+    fd = payload.get('fill_duration_ms')
+    try:
+        if fd is not None:
+            fd_int = int(fd)
+            if 0 <= fd_int <= 24 * 3600 * 1000:  # 24 soat ichida
+                result['fill_duration_ms'] = fd_int
+    except (TypeError, ValueError):
+        pass
+
+    return result
 
 
 def _extract_screening(payload: dict) -> dict:
@@ -191,6 +267,7 @@ def submit_public(request, survey_type):
     summary = _extract_summary(survey_type, answers)
     location = _extract_location(payload)
     screening = _extract_screening(payload)
+    device = _extract_device(payload, request)
 
     response = SurveyResponse.objects.create(
         survey_type=survey_type,
@@ -200,10 +277,10 @@ def submit_public(request, survey_type):
         completed_at=timezone.now(),
         is_completed=True,
         ip_address=_client_ip(request),
-        user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
         **summary,
         **location,
         **screening,
+        **device,
     )
     return JsonResponse({'ok': True, 'id': str(response.id)})
 
@@ -245,6 +322,7 @@ def submit_staff(request, survey_type):
     summary = _extract_summary(survey_type, answers)
     location = _extract_location(payload)
     screening = _extract_screening(payload)
+    device = _extract_device(payload, request)
 
     postal_office = None
     try:
@@ -262,10 +340,10 @@ def submit_staff(request, survey_type):
         completed_at=timezone.now(),
         is_completed=True,
         ip_address=_client_ip(request),
-        user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
         **summary,
         **location,
         **screening,
+        **device,
     )
     return JsonResponse({'ok': True, 'id': str(response.id)})
 

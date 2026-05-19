@@ -8,6 +8,8 @@
   var CFG = window.SURVEY_CONFIG || {};
   var currentLang = 'uz';
   var currentQIdx = 0;
+  // Boshlanish vaqti — submit'da fill_duration_ms hisoblash uchun
+  var SURVEY_START_TS = Date.now();
   // GLOBAL — inline oninput="answers.X=Y" lar global scope'da bajarilgani uchun
   window.answers = window.answers || {};
   var answers = window.answers;
@@ -296,11 +298,37 @@
   function startMainSurvey() {
     currentQIdx = 0;
     submitted = false;
+    SURVEY_START_TS = Date.now();
     goTo('page-survey');
     renderSurvey();
     window.scrollTo(0, 0);
   }
   window.startMainSurvey = startMainSurvey;
+
+  // Device fingerprint to'plash
+  function getDeviceInfo() {
+    var info = { ua: '', screen: '', platform: '', language: '', timezone: '' };
+    try { info.ua = navigator.userAgent || ''; } catch (e) {}
+    try { info.platform = navigator.platform || ''; } catch (e) {}
+    try { info.language = navigator.language || ''; } catch (e) {}
+    try {
+      if (window.screen) info.screen = (screen.width || 0) + 'x' + (screen.height || 0);
+    } catch (e) {}
+    try {
+      if (window.Intl && Intl.DateTimeFormat) {
+        info.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+      }
+    } catch (e) {}
+    try {
+      info.touch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    } catch (e) { info.touch = false; }
+    try { info.cores = navigator.hardwareConcurrency || 0; } catch (e) {}
+    try { info.memory = navigator.deviceMemory || 0; } catch (e) {}
+    return info;
+  }
+  function getFillDurationMs() {
+    return Math.max(0, Date.now() - SURVEY_START_TS);
+  }
 
   function scGoHome() { goTo('page-home'); }
   window.scGoHome = scGoHome;
@@ -791,6 +819,8 @@
           language: currentLang,
           location: null,
           screening: scAnswers,
+          device_info: getDeviceInfo(),
+          fill_duration_ms: getFillDurationMs(),
         }),
       }).then(function (res) {
         if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -839,6 +869,8 @@
           language: currentLang,
           location: location,
           screening: scAnswers,
+          device_info: getDeviceInfo(),
+          fill_duration_ms: getFillDurationMs(),
         }),
       });
     }).then(function (res) {
