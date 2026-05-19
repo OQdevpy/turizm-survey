@@ -674,6 +674,8 @@
     if (!answers.q14) answers.q14 = {};
     var isEmployment = (answers.q2 === 'employment');
     var showPkg = (answers.q6 === 'yes') && !isEmployment;
+    // Q13 dan default valyuta — agar qator uchun yo'q bo'lsa, shu ishlatiladi
+    var defaultCurrency = answers.q13_currency || '';
     var gridStyle = showPkg ? '1fr 36px 110px 80px' : '1fr 110px 80px';
     var headCols = showPkg
       ? '<div>' + t('Xarajat turi', 'Тип расхода') + '</div><div style="text-align:center">☑</div><div>' + t('Summa', 'Стоимость') + '</div><div>' + t('Valyuta', 'Валюта') + '</div>'
@@ -692,13 +694,16 @@
         ? '<div style="text-align:center"><input type="checkbox"' + (checked ? ' checked' : '') + ' onchange="toggleExpPkg(\'' + row.n + '\',this)"></div>'
         : (showPkg ? '<div></div>' : '');
       var rowClass = 'exp-row' + (row.sub ? ' subrow' : '') + (isMand ? ' mandatory-row' : '');
+      // Effektiv valyuta: agar qatorda yo'q bo'lsa, Q13'dan
+      var effectiveCurrency = r.currency || defaultCurrency;
+      var hasExplicit = !!r.currency || !!defaultCurrency;
       return '<div class="' + rowClass + '" style="grid-template-columns:' + gridStyle + '">' +
         '<div><div class="exp-num">' + row.n + '.</div><div class="exp-name">' + label + (isMand ? ' ⭐' : '') + '</div></div>' +
         chkCell +
         '<input class="exp-inp' + (isMand ? ' mand' : '') + '" type="number" min="0" placeholder="' + t('Summa...', 'Сумма...') + '" value="' + (r.amount || '') + '" ' + disabled + ' oninput="setExp(\'' + row.n + '\',\'amount\',this.value)">' +
         '<select class="exp-sel" ' + disabled + ' onchange="setExp(\'' + row.n + '\',\'currency\',this.value)">' +
-        '<option value="" disabled' + (!r.currency ? ' selected' : '') + ' hidden>—</option>' +
-        CURRENCIES.map(function (c) { return '<option value="' + c + '"' + (r.currency === c ? ' selected' : '') + '>' + c + '</option>'; }).join('') + '</select>' +
+        '<option value="" disabled' + (!hasExplicit ? ' selected' : '') + ' hidden>—</option>' +
+        CURRENCIES.map(function (c) { return '<option value="' + c + '"' + (effectiveCurrency === c ? ' selected' : '') + '>' + c + '</option>'; }).join('') + '</select>' +
         '</div>';
     }).join('');
 
@@ -730,6 +735,10 @@
     if (!answers.q14) answers.q14 = {};
     if (!answers.q14['r' + n]) answers.q14['r' + n] = {};
     answers.q14['r' + n][field] = val;
+    // Summa kiritilsa va valyuta tanlanmagan bo'lsa — Q13 dan default valyutani saqlash
+    if (field === 'amount' && val && !answers.q14['r' + n].currency && answers.q13_currency) {
+      answers.q14['r' + n].currency = answers.q13_currency;
+    }
   };
 
   // ============ GEOLOCATION ============
