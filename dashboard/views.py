@@ -1333,7 +1333,7 @@ def _analyze_ips(qs, top_n=30):
             if d['last_seen'] is None or r.started_at > d['last_seen']:
                 d['last_seen'] = r.started_at
 
-    # Shubhali belgilash
+    # Shubhali belgilash + Counter -> dict (Django template lookup uchun)
     for ip, d in ip_data.items():
         reasons = []
         if d['public'] > 0 and d['staff'] > 0:
@@ -1345,6 +1345,11 @@ def _analyze_ips(qs, top_n=30):
         d['reasons'] = reasons
         d['suspicious'] = bool(reasons)
         d['unique_countries'] = len(d['countries'])
+        # Counter -> plain dict (Counter.__getitem__ missing keys uchun 0 qaytaradi
+        # va Django {% for x, y in d.devices.items %} chaqirig'ini buzadi)
+        d['devices'] = dict(d['devices'])
+        d['os'] = dict(d['os'])
+        d['countries'] = dict(d['countries'])
         # tuplelarni sort qilamiz username bo'yicha
         d['staff_logins'] = sorted(d['staff_logins'], key=lambda x: x[1])
 
