@@ -54,7 +54,9 @@
   <div class="sb-right">
     <a href="{% url 'dashboard:monitoring' %}">🔍 Kuzatuv</a>
     <a href="{% url 'dashboard:index' %}">📊 Boshqaruv paneli</a>
+    {% if user.is_superuser %}
     <a href="{% url 'admin:index' %}">⚙ Admin paneli</a>
+    {% endif %}
     <a href="{% url 'home' %}">🏠 Bosh sahifa</a>
     <a href="{% url 'accounts:logout' %}" class="sb-logout">Chiqish</a>
   </div>

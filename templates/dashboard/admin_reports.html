@@ -14,9 +14,11 @@
     <span class="sb-meta">Xodim: <strong>{{ staff_full_name }}</strong></span>
   </div>
   <div class="sb-right">
-    <a href="{% url 'dashboard:index' %}">📊 Dashboard</a>
-    <a href="{% url 'dashboard:monitoring' %}">🔍 Monitoring</a>
-    <a href="{% url 'admin:index' %}">⚙ Admin panel</a>
+    <a href="{% url 'dashboard:index' %}">📊 Boshqaruv paneli</a>
+    <a href="{% url 'dashboard:monitoring' %}">🔍 Kuzatuv</a>
+    {% if user.is_superuser %}
+    <a href="{% url 'admin:index' %}">⚙ Admin paneli</a>
+    {% endif %}
     <a href="{% url 'home' %}">🏠 Bosh sahifa</a>
     <a href="{% url 'accounts:logout' %}" class="sb-logout">Chiqish</a>
   </div>
@@ -25,7 +27,7 @@
 <div class="dash-wrap">
   <div class="dash-h">
     <div>
-      <div class="breadcrumb">Dashboard / Hisobotlar</div>
+      <div class="breadcrumb">Boshqaruv paneli / Hisobotlar</div>
       <h1>📈 Batafsil hisobotlar</h1>
     </div>
   </div>
@@ -60,7 +62,9 @@
     <div class="actions">
       <button type="submit" class="btn-apply">Qo'llash</button>
       <a href="{% url 'dashboard:admin_reports' %}" class="btn-reset">Tozalash</a>
+      {% if user.is_superuser %}
       <a href="{% url 'dashboard:export' %}?from={{ filters.from }}&to={{ filters.to }}" class="btn-export">⬇ Excel</a>
+      {% endif %}
     </div>
   </form>
 
@@ -73,7 +77,7 @@
     {% for s in by_source %}
       <div class="stat-card accent-{% if s.source == 'staff' %}yellow{% else %}blue{% endif %}">
         <div class="stat-icon">{% if s.source == 'staff' %}👤{% else %}🌍{% endif %}</div>
-        <div class="stat-label">{% if s.source == 'staff' %}Xodim kiritgan{% else %}Self (turist){% endif %}</div>
+        <div class="stat-label">{% if s.source == 'staff' %}Xodim kiritgan{% else %}Turist o'zi to'ldirgan{% endif %}</div>
         <div class="stat-value">{{ s.c|intcomma }}</div>
       </div>
     {% endfor %}

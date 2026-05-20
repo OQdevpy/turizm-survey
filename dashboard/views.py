@@ -9,7 +9,9 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
 
-from accounts.decorators import staff_required, superuser_required
+from accounts.decorators import (
+    staff_required, superuser_required, admin_view_required, has_admin_view_access,
+)
 from accounts.models import PostalOffice
 from surveys.models import SurveyResponse
 from surveys.utils import device_fingerprint, ip_to_subnet24
@@ -171,12 +173,16 @@ def _date_ranges():
 
 @staff_required
 def index(request):
-    """Xodim uchun shaxsiy dashboard."""
+    """Xodim uchun shaxsiy dashboard.
+
+    - Superuser yoki kuzatuvchi (can_enter_surveys=False) — barcha so'rovnomalar
+    - Boshqa xodim — faqat o'zining yozuvlari
+    """
     user = request.user
     today, week_start, month_start = _date_ranges()
 
-    if user.is_superuser:
-        # Superuser uchun — barcha so'rovnomalar
+    admin_view = has_admin_view_access(user)
+    if admin_view:
         base_qs = SurveyResponse.objects.filter(is_completed=True)
     else:
         base_qs = SurveyResponse.objects.filter(is_completed=True, staff=user)
@@ -217,14 +223,14 @@ def index(request):
         'chart_labels': chart_labels,
         'chart_values': chart_values,
         'recent': recent,
-        'is_superuser_view': user.is_superuser,
+        'is_superuser_view': admin_view,
     }
     return render(request, 'dashboard/index.html', context)
 
 
-@superuser_required
+@admin_view_required
 def admin_reports(request):
-    """Superuser uchun to'liq hisobotlar."""
+    """To'liq hisobotlar — superuser yoki kuzatuvchi staff."""
     today, week_start, month_start = _date_ranges()
 
     qs = SurveyResponse.objects.filter(is_completed=True)
@@ -1702,9 +1708,9 @@ def _analyze_outbound(qs):
     return stats
 
 
-@superuser_required
+@admin_view_required
 def monitoring(request):
-    """Har bir savol bo'yicha monitoring — faqat superuser.
+    """Har bir savol bo'yicha monitoring — superuser yoki kuzatuvchi staff.
 
     Filtr: sana oralig'i, manba (public/staff), bo'lim, til.
     Sahifa Inbound va Outbound uchun alohida tab/qism bilan ko'rsatadi.
@@ -1903,11 +1909,11 @@ def _analyze_ips(qs, top_n=30):
     }
 
 
-@superuser_required
+@admin_view_required
 def monitoring_staff_detail(request, staff_id):
     """Bir xodim bo'yicha to'liq monitoring (IP, device, GPS, takrorlangan).
 
-    Faqat superuser kira oladi.
+    Superuser yoki kuzatuvchi staff kira oladi.
     """
     from django.contrib.auth.models import User
     from django.shortcuts import get_object_or_404

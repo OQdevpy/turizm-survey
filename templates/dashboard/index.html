@@ -15,9 +15,11 @@
     <span class="sb-meta">Xodim: <strong>{{ staff_full_name }}</strong></span>
   </div>
   <div class="sb-right">
-    {% if user.is_superuser %}
+    {% if has_admin_view_access %}
       <a href="{% url 'dashboard:admin_reports' %}">📈 Hisobotlar</a>
-      <a href="{% url 'dashboard:monitoring' %}">🔍 Monitoring</a>
+      <a href="{% url 'dashboard:monitoring' %}">🔍 Kuzatuv</a>
+    {% endif %}
+    {% if user.is_superuser %}
       <a href="{% url 'admin:index' %}">⚙ Admin panel</a>
     {% endif %}
     <a href="{% url 'home' %}">🏠 Bosh sahifa</a>
