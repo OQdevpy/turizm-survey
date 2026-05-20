@@ -162,8 +162,43 @@ def _now_minus(days=0, hours=0, minutes=0):
     return timezone.now() - timedelta(days=days, hours=hours, minutes=minutes)
 
 
-def _build_inbound_data(country, purpose='leisure', nights=4, with_full=True):
-    """Inbound so'rovnoma uchun realistik JSON data."""
+# Valyutalar va ularning realistik diapazonlari (turist xarajatlari uchun):
+# (total_min, total_max, row_min, row_max, pkg_min, pkg_max)
+CURRENCY_RANGES = {
+    'USD': (500, 5_000, 50, 800, 800, 4_000),
+    'EUR': (400, 4_500, 40, 700, 700, 3_500),
+    'UZS': (5_000_000, 60_000_000, 500_000, 8_000_000, 8_000_000, 40_000_000),
+    'RUB': (40_000, 400_000, 4_000, 60_000, 60_000, 300_000),
+    'KZT': (200_000, 2_500_000, 20_000, 350_000, 350_000, 1_800_000),
+    'CNY': (3_500, 35_000, 350, 5_500, 5_500, 28_000),
+    'GBP': (400, 4_000, 40, 600, 600, 3_200),
+    'JPY': (70_000, 700_000, 7_000, 110_000, 110_000, 550_000),
+    'AED': (2_000, 18_000, 200, 3_000, 3_000, 14_000),
+    'CHF': (450, 4_500, 45, 700, 700, 3_500),
+}
+
+
+def _amount(currency, kind='total'):
+    """Berilgan valyuta uchun realistik random summa qaytaradi.
+
+    kind: 'total' (Q16/Q13), 'row' (Q17/Q14 qator), 'pkg' (Q12/Q9)
+    """
+    ranges = CURRENCY_RANGES.get(currency, CURRENCY_RANGES['USD'])
+    if kind == 'row':
+        lo, hi = ranges[2], ranges[3]
+    elif kind == 'pkg':
+        lo, hi = ranges[4], ranges[5]
+    else:
+        lo, hi = ranges[0], ranges[1]
+    return random.randint(lo, hi)
+
+
+def _build_inbound_data(country, purpose='leisure', nights=4, with_full=True, currency='USD'):
+    """Inbound so'rovnoma uchun realistik JSON data.
+
+    `currency` argumenti — Q12 (paket), Q16 (umumiy), Q17 (xarajatlar)
+    uchun ishlatiladi. Default 'USD' (orqaga moslik).
+    """
     data = {
         'q1': country,
         'q2': 'same',
@@ -181,8 +216,8 @@ def _build_inbound_data(country, purpose='leisure', nights=4, with_full=True):
         'q13_airline': random.choice(['uzair', 'other']),
         'q14': 'airplane',
         'q14_airline': random.choice(['uzair', 'other']),
-        'q16_sum': random.randint(500, 5000),
-        'q16_currency': 'USD',
+        'q16_sum': _amount(currency, 'total'),
+        'q16_currency': currency,
         'q16_persons': random.randint(1, 4),
         'q19': '',
     }
@@ -190,14 +225,14 @@ def _build_inbound_data(country, purpose='leisure', nights=4, with_full=True):
         data['q10_total'] = nights + 2
         data['q10_uz'] = nights
         data['q11'] = data['q16_persons']
-        data['q12_amount'] = random.randint(1000, 4000)
-        data['q12_currency'] = 'USD'
+        data['q12_amount'] = _amount(currency, 'pkg')
+        data['q12_currency'] = currency
     if with_full:
-        # Q17 xarajatlar
+        # Q17 xarajatlar — har qator uchun shu valyutada
         data['q17'] = {
             f'r{i}': {
-                'amount': random.randint(50, 800),
-                'currency': 'USD',
+                'amount': _amount(currency, 'row'),
+                'currency': currency,
                 'inPackage': False,
             }
             for i in range(1, 15) if random.random() > 0.3
@@ -207,7 +242,11 @@ def _build_inbound_data(country, purpose='leisure', nights=4, with_full=True):
     return data
 
 
-def _build_outbound_data(country, purpose='leisure', nights=5):
+def _build_outbound_data(country, purpose='leisure', nights=5, currency='USD'):
+    """Outbound so'rovnoma uchun realistik JSON data.
+
+    `currency` argumenti — Q9 (paket), Q13 (umumiy), Q14 (xarajatlar) uchun.
+    """
     data = {
         'q1': country,
         'q2': purpose,
@@ -218,19 +257,19 @@ def _build_outbound_data(country, purpose='leisure', nights=5):
         'q10_airline': random.choice(['uzair', 'other']),
         'q11': 'airplane',
         'q11_airline': random.choice(['uzair', 'other']),
-        'q13_amount': random.randint(400, 3500),
-        'q13_currency': 'USD',
+        'q13_amount': _amount(currency, 'total'),
+        'q13_currency': currency,
         'q13_persons': random.randint(1, 4),
     }
     if data['q6'] == 'yes':
         data['q7'] = nights + 1
         data['q8'] = data['q13_persons']
-        data['q9_amount'] = random.randint(800, 3000)
-        data['q9_currency'] = 'USD'
+        data['q9_amount'] = _amount(currency, 'pkg')
+        data['q9_currency'] = currency
     data['q14'] = {
         f'r{n}': {
-            'amount': random.randint(40, 600),
-            'currency': 'USD',
+            'amount': _amount(currency, 'row'),
+            'currency': currency,
             'inPkg': False,
         }
         for n in ['1', '2', '3', '4', '5', '11', '13'] if random.random() > 0.3
@@ -696,6 +735,154 @@ class Command(BaseCommand):
             ))
         self.stdout.write(self.style.SUCCESS(
             "🌐 Outbound diversity: 25 ta (uz/ru, har xil davlatlar va maqsadlar)"
+        ))
+
+        # ============================================================
+        # GURUH M: Currency-varied Inbound (25 ta) — 9 ta turli valyutada
+        # ============================================================
+        # (country, currency, lang, device_key)
+        currency_inbound_cases = [
+            # USD — eng keng tarqalgan (5 ta)
+            ('United States', 'USD', 'en', 'iphone_safari'),
+            ('Canada',        'USD', 'en', 'pixel_chrome'),
+            ('Australia',     'USD', 'en', 'samsung_chrome'),
+            ('South Korea',   'USD', 'en', 'iphone_safari'),
+            ('Singapore',     'USD', 'en', 'mac_safari'),
+            # EUR (4 ta)
+            ('Germany',       'EUR', 'de', 'huawei_chrome'),
+            ('France',        'EUR', 'fr', 'pixel_chrome'),
+            ('Italy',         'EUR', 'it', 'ipad_safari'),
+            ('Netherlands',   'EUR', 'en', 'windows_chrome'),
+            # UZS (3 ta — mahalliy to'lov)
+            ('India',         'UZS', 'en', 'xiaomi_chrome'),
+            ('Pakistan',      'UZS', 'en', 'samsung_chrome'),
+            ('Indonesia',     'UZS', 'en', 'iphone_safari'),
+            # RUB (3 ta)
+            ('Russia',        'RUB', 'ru', 'windows_chrome'),
+            ('Belarus',       'RUB', 'ru', 'samsung_chrome'),
+            ('Ukraine',       'RUB', 'ru', 'iphone_safari'),
+            # CNY (3 ta)
+            ('China',         'CNY', 'zh', 'huawei_chrome'),
+            ('China',         'CNY', 'zh', 'xiaomi_chrome'),
+            ('Taiwan',        'CNY', 'zh', 'iphone_safari'),
+            # GBP (2 ta)
+            ('United Kingdom', 'GBP', 'en', 'iphone_safari'),
+            ('Ireland',        'GBP', 'en', 'mac_safari'),
+            # JPY (2 ta)
+            ('Japan',         'JPY', 'en', 'iphone_safari'),
+            ('Japan',         'JPY', 'en', 'samsung_chrome'),
+            # AED (2 ta)
+            ('UAE',           'AED', 'ar', 'iphone_safari'),
+            ('Saudi Arabia',  'AED', 'ar', 'samsung_chrome'),
+            # CHF (1 ta)
+            ('Switzerland',   'CHF', 'de', 'mac_safari'),
+        ]
+        for i, (country, cur, lang, dev_key) in enumerate(currency_inbound_cases):
+            dev = dict(DEVICES[dev_key])
+            # Til'ga moslab device locale yangilash
+            tz_map = {
+                'en': 'Asia/Tashkent', 'ru': 'Europe/Moscow', 'de': 'Europe/Berlin',
+                'fr': 'Europe/Paris', 'it': 'Europe/Rome', 'ar': 'Asia/Riyadh',
+                'zh': 'Asia/Shanghai',
+            }
+            dev['timezone'] = tz_map.get(lang, 'Asia/Tashkent')
+            gps = GPS_HOTELS[i % len(GPS_HOTELS)]
+            ts = _now_minus(days=random.randint(0, 21), hours=random.randint(0, 23))
+            # Unique IP per record
+            ip = f"103.{50 + i // 4}.{20 + i}.{50 + (i % 100)}"
+            created.append(_make(
+                survey_type=SurveyResponse.SURVEY_INBOUND,
+                source=SurveyResponse.SOURCE_PUBLIC,
+                language=lang,
+                data=_build_inbound_data(country, random.choice(PURPOSES), random.randint(3, 9), currency=cur),
+                ip_address=ip,
+                device_info=dev,
+                latitude=Decimal(str(gps[0])),
+                longitude=Decimal(str(gps[1])),
+                location_accuracy=random.uniform(15, 60),
+                started_at=ts,
+                fill_duration_ms=random.randint(180_000, 500_000),
+            ))
+        self.stdout.write(self.style.SUCCESS(
+            "💱 Currency-varied Inbound: 25 ta "
+            "(USD×5, EUR×4, UZS×3, RUB×3, CNY×3, GBP×2, JPY×2, AED×2, CHF×1)"
+        ))
+
+        # ============================================================
+        # GURUH N: Currency-varied Outbound (25 ta) — destinatsiyaga mos valyuta
+        # ============================================================
+        # (country, currency, lang)
+        currency_outbound_cases = [
+            # USD (4 ta — xalqaro to'lov)
+            ('Turkey',         'USD', 'uz'),
+            ('Egypt',          'USD', 'uz'),
+            ('Saudi Arabia',   'USD', 'uz'),
+            ('Thailand',       'USD', 'ru'),
+            # EUR (4 ta — Yevropa)
+            ('Germany',        'EUR', 'ru'),
+            ('France',         'EUR', 'uz'),
+            ('Italy',          'EUR', 'ru'),
+            ('Spain',          'EUR', 'uz'),
+            # UZS (3 ta — paket mahalliy)
+            ('Kyrgyzstan',     'UZS', 'uz'),
+            ('Tajikistan',     'UZS', 'uz'),
+            ('Iran',           'UZS', 'uz'),
+            # RUB (4 ta — Rossiya/MDH)
+            ('Russia',         'RUB', 'ru'),
+            ('Russia',         'RUB', 'uz'),
+            ('Belarus',        'RUB', 'ru'),
+            ('Azerbaijan',     'RUB', 'ru'),
+            # KZT (3 ta — Qozog'iston)
+            ('Kazakhstan',     'KZT', 'uz'),
+            ('Kazakhstan',     'KZT', 'ru'),
+            ('Kazakhstan',     'KZT', 'uz'),
+            # CNY (2 ta — Xitoy)
+            ('China',          'CNY', 'uz'),
+            ('China',          'CNY', 'ru'),
+            # AED (2 ta — BAA)
+            ('UAE',            'AED', 'uz'),
+            ('UAE',            'AED', 'ru'),
+            # GBP (1 ta)
+            ('United Kingdom', 'GBP', 'ru'),
+            # JPY (1 ta)
+            ('Japan',          'JPY', 'uz'),
+            # USD ham qo'shimcha 1 ta — Vyetnam
+            ('Vietnam',        'USD', 'uz'),
+        ]
+        UZ_DEVICES_M = ['samsung_chrome', 'xiaomi_chrome', 'huawei_chrome',
+                        'iphone_safari', 'windows_chrome', 'windows_edge']
+        UZ_RETURN_GPS_M = [
+            (41.2579, 69.2812), (41.3275, 69.2817), (41.3110, 69.2401),
+            (39.7008, 66.9839), (39.6542, 66.9597),
+            (39.7747, 64.4286), (39.7758, 64.4214),
+            (40.9846, 71.5567), (41.5848, 60.6417),
+            (40.5283, 70.9425), (40.3717, 71.7842),
+        ]
+        for i, (country, cur, lang) in enumerate(currency_outbound_cases):
+            dev_key = UZ_DEVICES_M[i % len(UZ_DEVICES_M)]
+            dev = dict(DEVICES[dev_key])
+            dev['language'] = f"{lang}-UZ" if lang == 'uz' else 'ru-RU'
+            dev['timezone'] = 'Asia/Tashkent'
+            ip = f"195.158.{20 + i // 5}.{100 + i}"
+            gps = UZ_RETURN_GPS_M[i % len(UZ_RETURN_GPS_M)]
+            purpose = random.choice(['leisure', 'friends', 'business', 'religion', 'health', 'education'])
+            ts = _now_minus(days=random.randint(0, 21), hours=random.randint(0, 23))
+            created.append(_make(
+                survey_type=SurveyResponse.SURVEY_OUTBOUND,
+                source=SurveyResponse.SOURCE_PUBLIC,
+                language=lang,
+                data=_build_outbound_data(country, purpose, random.randint(2, 14), currency=cur),
+                ip_address=ip,
+                device_info=dev,
+                latitude=Decimal(str(gps[0])),
+                longitude=Decimal(str(gps[1])),
+                location_accuracy=random.uniform(10, 60),
+                started_at=ts,
+                fill_duration_ms=random.randint(150_000, 550_000),
+            ))
+        self.stdout.write(self.style.SUCCESS(
+            "💱 Currency-varied Outbound: 25 ta "
+            "(USD×5, EUR×4, RUB×4, UZS×3, KZT×3, CNY×2, AED×2, GBP×1, JPY×1)"
         ))
 
         # ============================================================
