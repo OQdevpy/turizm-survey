@@ -344,13 +344,9 @@
           <td class="num">{% if item.has_amount_count %}{{ item.has_amount_count }}{% else %}—{% endif %}</td>
           <td>
             {% for cur in item.currencies %}
-              <div class="cur-chip">
-                <strong>{{ cur.currency }}</strong>
-                <span class="cur-c">{{ cur.count }}×</span>
-                avg <b>{{ cur.avg|floatformat:0|intcomma }}</b>
-                · sum <b>{{ cur.sum|floatformat:0|intcomma }}</b>
-                <span class="cur-mm">(med {{ cur.median|floatformat:0|intcomma }}, {{ cur.min|floatformat:0|intcomma }}–{{ cur.max|floatformat:0|intcomma }})</span>
-              </div>
+              <span class="cur-sum-chip">
+                <strong>{{ cur.currency }}</strong> — {{ cur.sum|floatformat:0|intcomma }}
+              </span>
             {% empty %}
               <span class="empty-currency">— faqat paketda —</span>
             {% endfor %}
