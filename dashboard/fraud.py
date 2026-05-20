@@ -260,6 +260,10 @@ def aggregate_risk_summary(results):
       'by_level': {'critical': N, 'high': N, 'medium': N, 'low': N},
       'by_reason': {'staff_public_same_ip': N, ...},
     }
+
+    `by_level` doim 4 ta kalit bilan qaytaradi (mavjud bo'lmasalar 0) —
+    Django template'da `{{ x.by_level.critical|default:0 }}` chaqirig'i
+    VariableDoesNotExist DEBUG log'larini chiqarmasligi uchun.
     """
     by_level = Counter()
     by_reason = Counter()
@@ -270,6 +274,11 @@ def aggregate_risk_summary(results):
 
     return {
         'total_evaluated': len(results),
-        'by_level': dict(by_level),
+        'by_level': {
+            'critical': by_level.get('critical', 0),
+            'high': by_level.get('high', 0),
+            'medium': by_level.get('medium', 0),
+            'low': by_level.get('low', 0),
+        },
         'by_reason': dict(by_reason),
     }
