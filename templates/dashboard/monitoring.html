@@ -151,6 +151,65 @@
     background: #fff0f0; color: var(--red); font-size: 10px;
     font-weight: 700; margin: 1px 2px;
   }
+
+  /* Currency stats jadvallari (Q16, Q13) */
+  .currency-table-wrap { margin-top: 14px; }
+  .currency-label {
+    font-size: 12px; font-weight: 700; color: var(--navy);
+    margin-bottom: 6px; padding: 4px 0;
+  }
+  .currency-table {
+    width: 100%; border-collapse: collapse; font-size: 12px;
+    background: #fff; border-radius: 8px; overflow: hidden;
+    border: 1px solid #e2edf7;
+  }
+  .currency-table thead th {
+    background: #f0f5fc; color: var(--navy); padding: 8px 10px;
+    font-size: 11px; font-weight: 700; text-align: right;
+    border-bottom: 1px solid #d8e8f5;
+  }
+  .currency-table thead th:first-child { text-align: left; }
+  .currency-table tbody td {
+    padding: 7px 10px; border-bottom: 1px solid #f0f5fc;
+    text-align: right; font-variant-numeric: tabular-nums;
+  }
+  .currency-table tbody tr:last-child td { border-bottom: none; }
+  .currency-table tbody tr:hover { background: #f7faff; }
+  .currency-table .cur-code {
+    text-align: left; font-weight: 800; color: var(--blue);
+    font-family: monospace; font-size: 12px;
+  }
+  .currency-table .cur-avg { color: var(--navy); font-weight: 700; }
+
+  /* Expense table (Q17, Q14) — currency-aware */
+  .exp-table {
+    width: 100%; border-collapse: collapse; font-size: 12px;
+    background: #fff;
+  }
+  .exp-table thead th {
+    background: var(--navy); color: #fff; padding: 8px 10px;
+    font-size: 11px; font-weight: 700; text-align: left;
+  }
+  .exp-table thead th.num, .exp-table tbody td.num { text-align: center; }
+  .exp-table tbody td {
+    padding: 8px 10px; border-bottom: 1px solid #eef3fa;
+    vertical-align: top;
+  }
+  .exp-table tbody tr:hover { background: #f7faff; }
+  .exp-name-cell {
+    font-weight: 700; color: var(--text); min-width: 180px;
+    max-width: 260px; word-break: break-word;
+  }
+  .cur-chip {
+    display: inline-block; background: #eef3fa; color: var(--text);
+    border-radius: 6px; padding: 4px 8px; margin: 2px 4px 2px 0;
+    font-size: 11px; font-variant-numeric: tabular-nums;
+    border-left: 3px solid var(--blue);
+  }
+  .cur-chip strong { color: var(--blue); font-family: monospace; }
+  .cur-chip .cur-c { color: var(--muted); font-size: 10px; margin: 0 4px; }
+  .cur-chip .cur-mm { color: var(--muted); font-size: 10px; margin-left: 6px; }
+  .empty-currency { color: var(--muted); font-size: 11px; font-style: italic; }
 </style>
 {% endblock %}
 

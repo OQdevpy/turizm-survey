@@ -1311,8 +1311,16 @@ def _analyze_inbound(qs):
     income_share = Counter()
     total_spent = []
     total_persons = []
+    # Q16 — valyuta bo'yicha jami va kishi boshi
+    total_spent_by_currency = defaultdict(list)
+    per_person_by_currency = defaultdict(list)
+    # Q12 — paket narxi valyuta bo'yicha
+    pkg_amount_by_currency = defaultdict(list)
+    # Q17 — har xarajat qatori uchun: used/in_package/has_amount + per-currency stats
     expense_used = Counter()
     expense_in_package = Counter()
+    expense_has_amount = Counter()
+    expense_by_currency = {label: defaultdict(list) for label in INBOUND_EXP_LABELS}
     rating_sums = [0] * 12
     rating_counts = [0] * 12
     rating_na = [0] * 12
@@ -1348,21 +1356,36 @@ def _analyze_inbound(qs):
         try:
             if d.get('q11'): pkg_persons.append(int(d['q11']))
         except (TypeError, ValueError): pass
+        # Q12 — paket narxi (jami) + valyuta bo'yicha
         try:
-            if d.get('q12_amount'): pkg_amount.append(float(d['q12_amount']))
+            if d.get('q12_amount'):
+                amt = float(d['q12_amount'])
+                pkg_amount.append(amt)
+                pkg_amount_by_currency[d.get('q12_currency') or 'UNK'].append(amt)
         except (TypeError, ValueError): pass
         if d.get('q13'): transport_in[d['q13']] += 1
         if d.get('q13_airline'): airline_in[d['q13_airline']] += 1
         if d.get('q14'): transport_out[d['q14']] += 1
         if d.get('q14_airline'): airline_out[d['q14_airline']] += 1
         if d.get('q15'): income_share[d['q15']] += 1
+        # Q16 — umumiy xarajat: total + per-person + per-currency
         try:
-            if d.get('q16_sum'): total_spent.append(float(d['q16_sum']))
+            if d.get('q16_sum'):
+                amt = float(d['q16_sum'])
+                total_spent.append(amt)
+                cur = d.get('q16_currency') or 'UNK'
+                total_spent_by_currency[cur].append(amt)
+                try:
+                    persons = int(d.get('q16_persons') or 1) or 1
+                    if persons > 0:
+                        per_person_by_currency[cur].append(amt / persons)
+                except (TypeError, ValueError): pass
         except (TypeError, ValueError): pass
         try:
             if d.get('q16_persons'): total_persons.append(int(d['q16_persons']))
         except (TypeError, ValueError): pass
 
+        # Q17 — har qator: used / in_package / has_amount + per-currency stats
         q17 = d.get('q17') or {}
         if isinstance(q17, dict):
             for k, row in q17.items():
@@ -1372,10 +1395,22 @@ def _analyze_inbound(qs):
                     i = int(idx) - 1
                     if i < 0 or i >= len(INBOUND_EXP_LABELS): continue
                     label = INBOUND_EXP_LABELS[i]
-                    if row.get('amount') or row.get('inPackage'):
+                    in_pkg = bool(row.get('inPackage'))
+                    amount_raw = row.get('amount')
+                    has_amt = False
+                    if amount_raw not in (None, ''):
+                        try:
+                            amt = float(amount_raw)
+                            if amt > 0:
+                                has_amt = True
+                                expense_by_currency[label][row.get('currency') or 'UNK'].append(amt)
+                        except (TypeError, ValueError): pass
+                    if in_pkg or has_amt:
                         expense_used[label] += 1
-                    if row.get('inPackage'):
+                    if in_pkg:
                         expense_in_package[label] += 1
+                    if has_amt:
+                        expense_has_amount[label] += 1
                 except (ValueError, TypeError): continue
 
         q18 = d.get('q18') or {}
@@ -1407,6 +1442,7 @@ def _analyze_inbound(qs):
     stats['pkg_nights_uz_avg'] = round(sum(pkg_nights_uz) / len(pkg_nights_uz), 1) if pkg_nights_uz else 0
     stats['pkg_persons_avg'] = round(sum(pkg_persons) / len(pkg_persons), 1) if pkg_persons else 0
     stats['pkg_amount_buckets'] = _money_buckets(pkg_amount)
+    stats['pkg_amount_currencies'] = _currency_stats(pkg_amount_by_currency)
     stats['transport_in'] = _counter_top(transport_in, 5)
     stats['transport_out'] = _counter_top(transport_out, 5)
     stats['airline_in'] = _counter_top(airline_in, 5)
@@ -1415,6 +1451,21 @@ def _analyze_inbound(qs):
     stats['total_spent_buckets'] = _money_buckets(total_spent)
     stats['total_spent_avg'] = round(sum(total_spent) / len(total_spent), 2) if total_spent else 0
     stats['total_persons_avg'] = round(sum(total_persons) / len(total_persons), 1) if total_persons else 0
+    # Currency-aware breakdown
+    stats['total_spent_currencies'] = _currency_stats(total_spent_by_currency)
+    stats['per_person_currencies'] = _currency_stats(per_person_by_currency)
+    # Q17 — har xarajat qatori uchun to'liq breakdown
+    stats['expense_breakdown'] = [
+        {
+            'label': label,
+            'used_count': expense_used.get(label, 0),
+            'in_package_count': expense_in_package.get(label, 0),
+            'has_amount_count': expense_has_amount.get(label, 0),
+            'currencies': _currency_stats(expense_by_currency.get(label, {})),
+        }
+        for label in INBOUND_EXP_LABELS
+    ]
+    # Eski strukturani saqlash (orqaga moslik uchun)
     stats['expense_used'] = [{'label': l, 'count': expense_used.get(l, 0)} for l in INBOUND_EXP_LABELS]
     stats['expense_in_package'] = [{'label': l, 'count': expense_in_package.get(l, 0)} for l in INBOUND_EXP_LABELS]
     ratings = []
@@ -1449,8 +1500,17 @@ def _analyze_outbound(qs):
     income_share = Counter()
     total_spent = []
     total_persons = []
+    # Q13 — valyuta bo'yicha jami va kishi boshi
+    total_spent_by_currency = defaultdict(list)
+    per_person_by_currency = defaultdict(list)
+    # Q9 — paket narxi valyuta bo'yicha
+    pkg_amount_by_currency = defaultdict(list)
+    # Q14 — har xarajat qatori
     expense_used = Counter()
     expense_in_pkg = Counter()
+    expense_has_amount = Counter()
+    ordered_labels_for_init = [lbl for _, lbl in OUTBOUND_EXP_LABELS]
+    expense_by_currency = {label: defaultdict(list) for label in ordered_labels_for_init}
 
     for r in qs:
         d = r.data or {}
@@ -1472,22 +1532,37 @@ def _analyze_outbound(qs):
             v = d.get('q8') or d.get('q8_persons')
             if v: pkg_persons.append(int(v))
         except (TypeError, ValueError): pass
+        # Q9 — paket narxi + valyuta
         try:
-            if d.get('q9_amount'): pkg_amount.append(float(d['q9_amount']))
+            if d.get('q9_amount'):
+                amt = float(d['q9_amount'])
+                pkg_amount.append(amt)
+                pkg_amount_by_currency[d.get('q9_currency') or 'UNK'].append(amt)
         except (TypeError, ValueError): pass
         if d.get('q10'): transport_out[d['q10']] += 1
         if d.get('q10_airline'): airline_out[d['q10_airline']] += 1
         if d.get('q11'): transport_in[d['q11']] += 1
         if d.get('q11_airline'): airline_in[d['q11_airline']] += 1
         if d.get('q12'): income_share[d['q12']] += 1
+        # Q13 — umumiy xarajat + valyuta + kishi boshi
         try:
             amount = d.get('q13_amount') or d.get('q13_sum')
-            if amount: total_spent.append(float(amount))
+            if amount:
+                amt = float(amount)
+                total_spent.append(amt)
+                cur = d.get('q13_currency') or 'UNK'
+                total_spent_by_currency[cur].append(amt)
+                try:
+                    persons = int(d.get('q13_persons') or 1) or 1
+                    if persons > 0:
+                        per_person_by_currency[cur].append(amt / persons)
+                except (TypeError, ValueError): pass
         except (TypeError, ValueError): pass
         try:
             if d.get('q13_persons'): total_persons.append(int(d['q13_persons']))
         except (TypeError, ValueError): pass
 
+        # Q14 — har qator: used / in_pkg / has_amount + per-currency stats
         q14 = d.get('q14') or {}
         if isinstance(q14, dict):
             label_map = {n: lbl for n, lbl in OUTBOUND_EXP_LABELS}
@@ -1495,10 +1570,23 @@ def _analyze_outbound(qs):
                 if not isinstance(row, dict): continue
                 rn = k.replace('r', '', 1)
                 label = label_map.get(rn, rn)
-                if row.get('amount') or row.get('inPkg'):
+                in_pkg = bool(row.get('inPkg'))
+                amount_raw = row.get('amount')
+                has_amt = False
+                if amount_raw not in (None, ''):
+                    try:
+                        amt = float(amount_raw)
+                        if amt > 0:
+                            has_amt = True
+                            if label in expense_by_currency:
+                                expense_by_currency[label][row.get('currency') or 'UNK'].append(amt)
+                    except (TypeError, ValueError): pass
+                if in_pkg or has_amt:
                     expense_used[label] += 1
-                if row.get('inPkg'):
+                if in_pkg:
                     expense_in_pkg[label] += 1
+                if has_amt:
+                    expense_has_amount[label] += 1
 
     stats['countries'] = _counter_top(countries, 15)
     stats['purposes'] = _counter_top(purposes, 12)
@@ -1510,6 +1598,7 @@ def _analyze_outbound(qs):
     stats['pkg_nights_avg'] = round(sum(pkg_nights) / len(pkg_nights), 1) if pkg_nights else 0
     stats['pkg_persons_avg'] = round(sum(pkg_persons) / len(pkg_persons), 1) if pkg_persons else 0
     stats['pkg_amount_buckets'] = _money_buckets(pkg_amount)
+    stats['pkg_amount_currencies'] = _currency_stats(pkg_amount_by_currency)
     stats['transport_out'] = _counter_top(transport_out, 5)
     stats['transport_in'] = _counter_top(transport_in, 5)
     stats['airline_out'] = _counter_top(airline_out, 5)
@@ -1518,7 +1607,22 @@ def _analyze_outbound(qs):
     stats['total_spent_buckets'] = _money_buckets(total_spent)
     stats['total_spent_avg'] = round(sum(total_spent) / len(total_spent), 2) if total_spent else 0
     stats['total_persons_avg'] = round(sum(total_persons) / len(total_persons), 1) if total_persons else 0
+    # Currency-aware breakdown
+    stats['total_spent_currencies'] = _currency_stats(total_spent_by_currency)
+    stats['per_person_currencies'] = _currency_stats(per_person_by_currency)
+    # Q14 — har xarajat qatori uchun to'liq breakdown
     ordered_labels = [lbl for _, lbl in OUTBOUND_EXP_LABELS]
+    stats['expense_breakdown'] = [
+        {
+            'label': label,
+            'used_count': expense_used.get(label, 0),
+            'in_package_count': expense_in_pkg.get(label, 0),
+            'has_amount_count': expense_has_amount.get(label, 0),
+            'currencies': _currency_stats(expense_by_currency.get(label, {})),
+        }
+        for label in ordered_labels
+    ]
+    # Eski strukturani saqlash
     stats['expense_used'] = [{'label': l, 'count': expense_used.get(l, 0)} for l in ordered_labels]
     stats['expense_in_package'] = [{'label': l, 'count': expense_in_pkg.get(l, 0)} for l in ordered_labels]
     return stats

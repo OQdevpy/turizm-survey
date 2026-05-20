@@ -238,11 +238,12 @@
 </div>
 {% endif %}
 
-{# Q16 — Umumiy xarajat #}
+{# Q16 — Umumiy xarajat (currency-aware) #}
 <div class="q-block">
   <h3>{{ labels.q16 }}
-    <span class="q-count">O'rt: {{ s.total_spent_avg }} · {{ s.total_persons_avg }} kishi</span>
+    <span class="q-count">O'rt: {{ s.total_spent_avg|floatformat:2|intcomma }} · {{ s.total_persons_avg }} kishi</span>
   </h3>
+  <!-- Diapazon (bucket) -->
   <div class="q-bar-list">
     {% for item in s.total_spent_buckets %}
       <div class="q-bar-row">
@@ -254,22 +255,111 @@
       <div class="empty-q">Xarajat ma'lumotlari yo'q.</div>
     {% endfor %}
   </div>
+
+  <!-- Valyuta bo'yicha to'liq statistika -->
+  {% if s.total_spent_currencies %}
+  <div class="currency-table-wrap">
+    <div class="currency-label">💰 Valyuta bo'yicha (umumiy xarajat)</div>
+    <table class="currency-table">
+      <thead>
+        <tr>
+          <th>Valyuta</th>
+          <th>Soni</th>
+          <th>Jami</th>
+          <th>O'rtacha</th>
+          <th>Median</th>
+          <th>Min</th>
+          <th>Max</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cur in s.total_spent_currencies %}
+        <tr>
+          <td class="cur-code">{{ cur.currency }}</td>
+          <td>{{ cur.count|intcomma }}</td>
+          <td>{{ cur.sum|floatformat:2|intcomma }}</td>
+          <td class="cur-avg">{{ cur.avg|floatformat:2|intcomma }}</td>
+          <td>{{ cur.median|floatformat:2|intcomma }}</td>
+          <td>{{ cur.min|floatformat:2|intcomma }}</td>
+          <td>{{ cur.max|floatformat:2|intcomma }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Per-person (kishi boshiga) -->
+  {% if s.per_person_currencies %}
+  <div class="currency-table-wrap">
+    <div class="currency-label">👤 Kishi boshiga (Q16/Q16_persons)</div>
+    <table class="currency-table">
+      <thead>
+        <tr>
+          <th>Valyuta</th>
+          <th>Soni</th>
+          <th>O'rtacha (kishi boshi)</th>
+          <th>Median</th>
+          <th>Min</th>
+          <th>Max</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cur in s.per_person_currencies %}
+        <tr>
+          <td class="cur-code">{{ cur.currency }}</td>
+          <td>{{ cur.count|intcomma }}</td>
+          <td class="cur-avg">{{ cur.avg|floatformat:2|intcomma }}</td>
+          <td>{{ cur.median|floatformat:2|intcomma }}</td>
+          <td>{{ cur.min|floatformat:2|intcomma }}</td>
+          <td>{{ cur.max|floatformat:2|intcomma }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
 </div>
 
-{# Q17 — Xarajatlar #}
+{# Q17 — Xarajatlar jadvali (har qator: count + per-currency) #}
 <div class="q-block">
-  <h3>{{ labels.q17 }}</h3>
-  <div class="q-bar-list">
-    {% for item in s.expense_used %}
-      {% if item.count %}
-      <div class="q-bar-row">
-        <div class="lbl" title="{{ item.label }}">{{ item.label }}</div>
-        <div class="bar"><div class="bar-fill" style="width:{% widthratio item.count total 100 %}%"></div></div>
-        <div class="val">{{ item.count|intcomma }}</div>
-      </div>
-      {% endif %}
-    {% endfor %}
-  </div>
+  <h3>{{ labels.q17 }} <span class="q-count">valyuta bo'yicha</span></h3>
+  <table class="exp-table">
+    <thead>
+      <tr>
+        <th>Xarajat turi</th>
+        <th title="Jami foydalanganlar (paket yoki summa)">Jami</th>
+        <th title="Paketga kiritilgan">Paketda</th>
+        <th title="Summa kiritilgan">Summa</th>
+        <th>Valyuta bo'yicha (count × avg | sum)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in s.expense_breakdown %}
+        {% if item.used_count %}
+        <tr>
+          <td class="exp-name-cell">{{ item.label }}</td>
+          <td class="num">{{ item.used_count }}</td>
+          <td class="num">{% if item.in_package_count %}{{ item.in_package_count }}{% else %}—{% endif %}</td>
+          <td class="num">{% if item.has_amount_count %}{{ item.has_amount_count }}{% else %}—{% endif %}</td>
+          <td>
+            {% for cur in item.currencies %}
+              <div class="cur-chip">
+                <strong>{{ cur.currency }}</strong>
+                <span class="cur-c">{{ cur.count }}×</span>
+                avg <b>{{ cur.avg|floatformat:0|intcomma }}</b>
+                · sum <b>{{ cur.sum|floatformat:0|intcomma }}</b>
+                <span class="cur-mm">(med {{ cur.median|floatformat:0|intcomma }}, {{ cur.min|floatformat:0|intcomma }}–{{ cur.max|floatformat:0|intcomma }})</span>
+              </div>
+            {% empty %}
+              <span class="empty-currency">— faqat paketda —</span>
+            {% endfor %}
+          </td>
+        </tr>
+        {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 
 {# Q18 — Reytinglar #}
