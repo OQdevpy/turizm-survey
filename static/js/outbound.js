@@ -514,7 +514,7 @@
       { val: 'health', uz: "Sog'liqni tiklash maqsadida tibbiy davolanish", ru: 'Лечение и получение медицинских услуг' },
       { val: 'religion', uz: 'Diniy maqsad va ziyorat', ru: 'Религиозные цели и паломничество' },
       { val: 'employment', uz: "Ishlash maqsadida / haq to'lanadigan mehnat faoliyati", ru: 'Трудоустройство / оплачиваемая работа за рубежом' },
-      { val: 'other', uz: 'Boshqa, iltimos aniq yozing', ru: 'Другое, пожалуйста укажите' }
+      { val: 'other', uz: 'Boshqa', ru: 'Другое' }
     ];
     return chip(2, seq.length) +
       qTitle("Xorijga safaringizning asosiy maqsadini ko'rsating?", 'Укажите основную цель Вашей поездки за рубеж?') +
