@@ -276,14 +276,14 @@
 {% block body %}
 <div class="staff-bar">
   <div class="sb-left">
-    <span class="sb-logo">🔍 MONITORING</span>
-    <span class="sb-meta">Har bir savol + IP + Device + Risk tahlili</span>
+    <span class="sb-logo">🔍 KUZATUV</span>
+    <span class="sb-meta">Har bir savol, IP manzil, qurilma va risk tahlili</span>
   </div>
   <div class="sb-right">
-    <a href="{% url 'dashboard:index' %}">📊 Dashboard</a>
+    <a href="{% url 'dashboard:index' %}">📊 Boshqaruv paneli</a>
     <a href="{% url 'dashboard:admin_reports' %}">📈 Hisobotlar</a>
-    <a href="{% url 'admin:index' %}">⚙ Admin</a>
-    <a href="{% url 'home' %}">🏠 Bosh</a>
+    <a href="{% url 'admin:index' %}">⚙ Admin paneli</a>
+    <a href="{% url 'home' %}">🏠 Bosh sahifa</a>
     <a href="{% url 'accounts:logout' %}" class="sb-logout">Chiqish</a>
   </div>
 </div>
@@ -291,8 +291,8 @@
 <div class="dash-wrap">
   <div class="dash-h">
     <div>
-      <div class="breadcrumb">Dashboard / Monitoring</div>
-      <h1>🔍 Monitoring</h1>
+      <div class="breadcrumb">Boshqaruv paneli / Kuzatuv</div>
+      <h1>🔍 Kuzatuv natijalari</h1>
     </div>
   </div>
 
@@ -310,8 +310,8 @@
       <label>Manba</label>
       <select name="source">
         <option value="">— Hammasi —</option>
-        <option value="public" {% if filters.source == 'public' %}selected{% endif %}>Self (turist)</option>
-        <option value="staff" {% if filters.source == 'staff' %}selected{% endif %}>Staff kiritgan</option>
+        <option value="public" {% if filters.source == 'public' %}selected{% endif %}>Turist o'zi to'ldirgan</option>
+        <option value="staff" {% if filters.source == 'staff' %}selected{% endif %}>Xodim kiritgan</option>
       </select>
     </div>
     <div class="field">
@@ -356,22 +356,22 @@
     </div>
     <div class="stat-card accent-blue">
       <div class="stat-icon">🛬</div>
-      <div class="stat-label">Inbound</div>
+      <div class="stat-label">Kelish (Inbound)</div>
       <div class="stat-value">{{ inbound_total|intcomma }}</div>
     </div>
     <div class="stat-card accent-green">
       <div class="stat-icon">🛫</div>
-      <div class="stat-label">Outbound</div>
+      <div class="stat-label">Chiqish (Outbound)</div>
       <div class="stat-value">{{ outbound_total|intcomma }}</div>
     </div>
     <div class="stat-card accent-blue">
       <div class="stat-icon">🌍</div>
-      <div class="stat-label">Public</div>
+      <div class="stat-label">Turist to'ldirgan</div>
       <div class="stat-value">{{ public_total|intcomma }}</div>
     </div>
     <div class="stat-card accent-yellow">
       <div class="stat-icon">👤</div>
-      <div class="stat-label">Staff</div>
+      <div class="stat-label">Xodim kiritgan</div>
       <div class="stat-value">{{ staff_total|intcomma }}</div>
     </div>
     {% if risks %}
@@ -385,11 +385,11 @@
 
   <!-- Tablar -->
   <div class="mon-tabs">
-    <button type="button" class="mon-tab active" data-target="tab-inbound">🛬 Inbound <span class="badge">{{ inbound_total }}</span></button>
-    <button type="button" class="mon-tab" data-target="tab-outbound">🛫 Outbound <span class="badge">{{ outbound_total }}</span></button>
-    <button type="button" class="mon-tab" data-target="tab-ips">🌐 IP-lar <span class="badge">{{ ip_stats.total_unique_ips }}</span></button>
-    <button type="button" class="mon-tab" data-target="tab-devices">📱 Devicelar <span class="badge">{{ device_stats.total_unique_devices }}</span></button>
-    <button type="button" class="mon-tab danger" data-target="tab-risks">🚨 Riskler <span class="badge">{{ risks|length }}</span></button>
+    <button type="button" class="mon-tab active" data-target="tab-inbound">🛬 Kelish (Inbound) <span class="badge">{{ inbound_total }}</span></button>
+    <button type="button" class="mon-tab" data-target="tab-outbound">🛫 Chiqish (Outbound) <span class="badge">{{ outbound_total }}</span></button>
+    <button type="button" class="mon-tab" data-target="tab-ips">🌐 IP manzillar <span class="badge">{{ ip_stats.total_unique_ips }}</span></button>
+    <button type="button" class="mon-tab" data-target="tab-devices">📱 Qurilmalar <span class="badge">{{ device_stats.total_unique_devices }}</span></button>
+    <button type="button" class="mon-tab danger" data-target="tab-risks">🚨 Shubhali hodisalar <span class="badge">{{ risks|length }}</span></button>
     <button type="button" class="mon-tab" data-target="tab-meta">🌐 Tillar / Filtr</button>
   </div>
 
@@ -398,8 +398,8 @@
     {% if inbound_stats %}
       <div class="src-tabs">
         <button type="button" class="src-tab active" data-pane="inbound-all">Hammasi ({{ inbound_stats.all_total }})</button>
-        <button type="button" class="src-tab" data-pane="inbound-public">🌍 Public ({{ inbound_stats.public_total }})</button>
-        <button type="button" class="src-tab" data-pane="inbound-staff">👤 Staff ({{ inbound_stats.staff_total }})</button>
+        <button type="button" class="src-tab" data-pane="inbound-public">🌍 Turist to'ldirgan ({{ inbound_stats.public_total }})</button>
+        <button type="button" class="src-tab" data-pane="inbound-staff">👤 Xodim kiritgan ({{ inbound_stats.staff_total }})</button>
       </div>
       <div class="src-pane active" id="inbound-all">
         {% include 'dashboard/_monitoring_inbound.html' with s=inbound_stats.all labels=inbound_q_labels total=inbound_stats.all_total %}
@@ -415,7 +415,7 @@
       </div>
       {% endif %}
     {% else %}
-      <div class="empty-q">📭 Inbound yozuvlar yo'q.</div>
+      <div class="empty-q">📭 Kelish (Inbound) yozuvlar yo'q.</div>
     {% endif %}
   </div>
 
@@ -424,8 +424,8 @@
     {% if outbound_stats %}
       <div class="src-tabs">
         <button type="button" class="src-tab active" data-pane="outbound-all">Hammasi ({{ outbound_stats.all_total }})</button>
-        <button type="button" class="src-tab" data-pane="outbound-public">🌍 Public ({{ outbound_stats.public_total }})</button>
-        <button type="button" class="src-tab" data-pane="outbound-staff">👤 Staff ({{ outbound_stats.staff_total }})</button>
+        <button type="button" class="src-tab" data-pane="outbound-public">🌍 Turist to'ldirgan ({{ outbound_stats.public_total }})</button>
+        <button type="button" class="src-tab" data-pane="outbound-staff">👤 Xodim kiritgan ({{ outbound_stats.staff_total }})</button>
       </div>
       <div class="src-pane active" id="outbound-all">
         {% include 'dashboard/_monitoring_outbound.html' with s=outbound_stats.all labels=outbound_q_labels total=outbound_stats.all_total %}
@@ -441,36 +441,36 @@
       </div>
       {% endif %}
     {% else %}
-      <div class="empty-q">📭 Outbound yozuvlar yo'q.</div>
+      <div class="empty-q">📭 Chiqish (Outbound) yozuvlar yo'q.</div>
     {% endif %}
   </div>
 
   <!-- ============ IP-LAR ============ -->
   <div class="mon-section" id="tab-ips">
     <div class="summary-cards">
-      <div class="risk-card ok"><div class="num">{{ ip_stats.total_unique_ips|intcomma }}</div><div class="lbl">Jami unique IP</div></div>
+      <div class="risk-card ok"><div class="num">{{ ip_stats.total_unique_ips|intcomma }}</div><div class="lbl">Jami noyob IP</div></div>
       <div class="risk-card high"><div class="num" style="color:#e74c3c">{{ ip_stats.suspicious_count|intcomma }}</div><div class="lbl">Shubhali IP</div></div>
-      <div class="risk-card critical"><div class="num" style="color:#c0392b">{{ ip_stats.shared_ips_count|intcomma }}</div><div class="lbl">Staff+Public bir IP</div></div>
+      <div class="risk-card critical"><div class="num" style="color:#c0392b">{{ ip_stats.shared_ips_count|intcomma }}</div><div class="lbl">Xodim+Turist bir IP</div></div>
       <div class="risk-card medium"><div class="num" style="color:#f39c12">{{ ip_stats.high_volume_count|intcomma }}</div><div class="lbl">Yuqori hajm IP (10+)</div></div>
     </div>
     <div class="q-block">
-      <h3>🌐 IP'lar (top 30) <span class="q-count">{{ ip_stats.top|length }} ko'rsatildi</span></h3>
+      <h3>🌐 IP manzillar (eng yuqori 30) <span class="q-count">{{ ip_stats.top|length }} ko'rsatildi</span></h3>
       {% if ip_stats.top %}
       <div style="overflow-x: auto;">
         <table class="ip-table">
           <thead>
             <tr>
-              <th>IP / Subnet</th>
+              <th>IP / Tarmoq</th>
               <th style="text-align:center">Jami</th>
-              <th style="text-align:center">Public</th>
-              <th style="text-align:center">Staff</th>
-              <th style="text-align:center">Inbound</th>
-              <th style="text-align:center">Outbound</th>
+              <th style="text-align:center">Turist</th>
+              <th style="text-align:center">Xodim</th>
+              <th style="text-align:center">Kelish</th>
+              <th style="text-align:center">Chiqish</th>
               <th>Davlatlar</th>
-              <th>Devicelar</th>
-              <th>Staff loginlari</th>
+              <th>Qurilmalar</th>
+              <th>Xodim loginlari</th>
               <th>Oxirgi sana</th>
-              <th>Status</th>
+              <th>Holati</th>
             </tr>
           </thead>
           <tbody>
@@ -512,16 +512,16 @@
         </table>
       </div>
       {% else %}
-        <div class="empty-q">IP yozuvlar yo'q.</div>
+        <div class="empty-q">IP yozuvlari yo'q.</div>
       {% endif %}
     </div>
   </div>
 
-  <!-- ============ DEVICELAR ============ -->
+  <!-- ============ QURILMALAR ============ -->
   <div class="mon-section" id="tab-devices">
     <div class="device-grid">
       <div class="device-card">
-        <h4>📱 Device turi</h4>
+        <h4>📱 Qurilma turi</h4>
         <div class="q-bar-list">
           {% for item in device_stats.device_types %}
             <div class="q-bar-row">
@@ -564,7 +564,7 @@
 
     {% if device_stats.reused_devices %}
     <div class="q-block" style="margin-top: 16px; border-left-color: #f39c12;">
-      <h3>⚠️ Takrorlangan devicelar <span class="q-count">3+ marta</span></h3>
+      <h3>⚠️ Takrorlangan qurilmalar <span class="q-count">3+ marta</span></h3>
       <div class="q-bar-list">
         {% for d in device_stats.reused_devices %}
           <div class="q-bar-row">
@@ -582,10 +582,10 @@
   <div class="mon-section" id="tab-risks">
     {% if risks %}
       <div class="risk-cards">
-        <div class="risk-card critical"><div class="num" style="color:#c0392b">{{ risk_summary.by_level.critical|default:0 }}</div><div class="lbl">🔴 Critical</div></div>
-        <div class="risk-card high"><div class="num" style="color:#e74c3c">{{ risk_summary.by_level.high|default:0 }}</div><div class="lbl">🟠 High</div></div>
-        <div class="risk-card medium"><div class="num" style="color:#f39c12">{{ risk_summary.by_level.medium|default:0 }}</div><div class="lbl">🟡 Medium</div></div>
-        <div class="risk-card low"><div class="num" style="color:#d4a017">{{ risk_summary.by_level.low|default:0 }}</div><div class="lbl">🟢 Low</div></div>
+        <div class="risk-card critical"><div class="num" style="color:#c0392b">{{ risk_summary.by_level.critical|default:0 }}</div><div class="lbl">🔴 Juda yuqori</div></div>
+        <div class="risk-card high"><div class="num" style="color:#e74c3c">{{ risk_summary.by_level.high|default:0 }}</div><div class="lbl">🟠 Yuqori</div></div>
+        <div class="risk-card medium"><div class="num" style="color:#f39c12">{{ risk_summary.by_level.medium|default:0 }}</div><div class="lbl">🟡 O'rta</div></div>
+        <div class="risk-card low"><div class="num" style="color:#d4a017">{{ risk_summary.by_level.low|default:0 }}</div><div class="lbl">🟢 Past</div></div>
       </div>
 
       {% for item in risks %}
@@ -643,7 +643,7 @@
     </div>
 
     <div class="q-block">
-      <h3>🔍 Screening (filtr) natijalari</h3>
+      <h3>🔍 Filtr savollari natijalari</h3>
       <div class="q-bar-list">
         {% for s in screening_dist %}
           <div class="q-bar-row">

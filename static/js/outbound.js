@@ -110,10 +110,10 @@
   // ==================== TRANSLATIONS ====================
   var T = {
     uz: {
-      welcome_title: 'HURMATLI SAYOH,',
-      welcome_text: "Turizm rivojlanishini o'rganish va O'zbekistonning turizm yordamchi hisobini tuzish maqsadida o'tkazilayotgan ushbu so'rovnomada ishtirok etishingizni iltimos qilamiz. Mazkur so'rovnomaga kiritilgan barcha savollarga javob berish orqali bizga ko'maklashishingizni so'raymiz.",
-      welcome_conf: "Javoblaringiz mahfiyligi O'zbekiston Respublikasining \"Rasmiy statistika to'g'risida\"gi Qonuni bilan kafolatlanadi.",
-      start: 'SO\'ROVNOMANI BOSHLASH',
+      welcome_title: 'HURMATLI SAYOHATCHI,',
+      welcome_text: "Turizm sohasini o'rganish va O'zbekistonning turizm yordamchi hisobini tuzish maqsadida o'tkazilayotgan ushbu so'rovnomada ishtirok etishingizni iltimos qilamiz. Mazkur so'rovnomaga kiritilgan barcha savollarga javob berish orqali bizga ko'maklashishingizni so'raymiz.",
+      welcome_conf: "Javoblaringiz maxfiyligi O'zbekiston Respublikasining \"Rasmiy statistika to'g'risida\"gi Qonuni bilan kafolatlanadi.",
+      start: 'BOSHLASH',
       back: '← Ortga', next: 'Keyingi →', finish: 'Yakunlash ✓',
       submitting: 'Saqlanmoqda…',
       submit_error: "Saqlash muvaffaqiyatsiz. Qayta urinib ko'ring.",
@@ -130,7 +130,7 @@
       welcome_title: 'УВАЖАЕМЫЙ ПУТЕШЕСТВЕННИК,',
       welcome_text: 'Просим Вас принять участие в данном обследовании. Оно проводится для изучения туристских поездок и составления вспомогательного счёта туризма Узбекистана. Ваши ответы будут использоваться только в статистических целях.',
       welcome_conf: 'Конфиденциальность Ваших ответов гарантируется Законом Республики Узбекистан «Об официальной статистике».',
-      start: 'НАЧАТЬ ОПРОС',
+      start: 'НАЧАТЬ',
       back: '← Назад', next: 'Далее →', finish: 'Завершить ✓',
       submitting: 'Сохранение…',
       submit_error: 'Не удалось сохранить. Попробуйте ещё раз.',
@@ -333,6 +333,27 @@
   function scGoHome() { goTo('page-home'); }
   window.scGoHome = scGoHome;
 
+  // Faqat staff uchun — joriy holatni o'chirib boshiga qaytadi
+  function staffReset() {
+    if (!CFG.isStaffView) return;
+    var msg = currentLang === 'ru'
+      ? 'Сбросить текущие ответы и начать новый опрос?'
+      : "Hozirgi javoblarni o'chirib, yangi so'rovnomani boshlaymizmi?";
+    if (!window.confirm(msg)) return;
+    try { clearState(); } catch (e) {}
+    resetAnswers();
+    if (typeof scReset === 'function') {
+      try { scReset(); } catch (e) {}
+    }
+    currentQIdx = 0;
+    submitted = false;
+    SURVEY_START_TS = Date.now();
+    setLanguage(currentLang === 'ru' ? 'ru' : 'uz');
+    goTo('page-home');
+    window.scrollTo(0, 0);
+  }
+  window.staffReset = staffReset;
+
   function prevQuestion() {
     if (currentQIdx > 0) { currentQIdx--; renderSurvey(); scrollToTop(); }
   }
@@ -468,7 +489,7 @@
   function rQ1() {
     var seq = buildSeq(), sel = answers.q1 || '', list = cList();
     return chip(1, seq.length) +
-      qTitle("Xorijga safaringizning asosiy qismi qaysi davlatda bo'ldi?",
+      qTitle("Safaringizning asosiy qismi qaysi davlatda bo'ldi?",
              'В какой стране преимущественно прошла Ваша поездка за рубеж?') +
       qSub('Faqat bitta javob belgilansin', 'Только один ответ') +
       '<div class="search-wrap"><span class="search-icon">🔍</span><input type="text" class="search-input" placeholder="' + T[currentLang].search + '" oninput="filterC(\'clist1\',this.value)"></div>' +
@@ -563,7 +584,7 @@
       { val: 'other', uz: 'Boshqa pullik joylashtirish vositalari', ru: 'Другое платное размещение' }
     ];
     return chip(5, seq.length) +
-      qTitle("Xorijda bo'lish davrida asosan qanday joyda qoldingiz?", 'Каким типом размещения Вы в основном пользовались во время пребывания за рубежом?') +
+      qTitle("Xorijda bo'lgan davringizda asosan qanday joyda tunab qoldingiz?", 'Каким типом размещения Вы в основном пользовались во время пребывания за рубежом?') +
       qSub("Eng ko'p tunlagan joyni tanlang.", 'Выберите один вариант, где Вы провели наибольшее количество ночей.') +
       '<ul class="opt-list">' +
       opts.map(function (o) {
@@ -589,14 +610,14 @@
   function rQ7() {
     var seq = buildSeq(), v = answers.q7 || '';
     return chip(7, seq.length) +
-      qTitle("Tur paket jami necha tunni qamrab oldi?", 'Сколько ночей в общей сложности охватывал пакетный тур?') +
+      qTitle("Tur paket jami necha tunni qamrab olgan?", 'Сколько ночей в общей сложности охватывал пакетный тур?') +
       '<input type="number" class="survey-input" min="1" value="' + v + '" placeholder="' + t('Tunlar soni...', 'Количество ночей...') + '" oninput="answers.q7=parseInt(this.value)||0">';
   }
 
   function rQ8() {
     var seq = buildSeq(), v = answers.q8 || '';
     return chip(8, seq.length) +
-      qTitle("Siz bilan birga tur paket necha kishiga mo'ljallangan edi?",
+      qTitle("Siz bilan birga tur paket necha kishini qamrab olgan?",
              'На сколько человек, включая Вас, был рассчитан пакетный тур?') +
       '<input type="number" class="survey-input" min="1" value="' + v + '" placeholder="' + t('Kishilar soni...', 'Количество человек...') + '" oninput="answers.q8=parseInt(this.value)||0">';
   }
@@ -604,7 +625,7 @@
   function rQ9() {
     var seq = buildSeq();
     return chip(9, seq.length) +
-      qTitle("Bu tur uchun qancha to'ladingiz?", 'Сколько Вы заплатили за этот тур?') +
+      qTitle("Ushbu turpaket uchun qancha to'ladingiz?", 'Сколько Вы заплатили за этот тур?') +
       qSub("To'lov summasini va valyutasini ko'rsating.", 'Укажите сумму и валюту платежа.') +
       '<div class="inline-fields">' +
       '<input type="number" class="survey-input" style="flex:2;margin-bottom:0" min="0" value="' + (answers.q9_amount || '') + '" placeholder="' + t('Summa...', 'Сумма...') + '" oninput="answers.q9_amount=this.value">' +
@@ -669,12 +690,12 @@
 
   function rQ12() {
     var seq = buildSeq(), v = answers.q12 || '';
-    var optsUz = ['25%dan kam', '25% – 50%', '50% – 75%', "75%dan ko'proq"];
-    var optsRu = ['Менее 25%', '25% – 50%', '50% – 75%', 'Более 75%'];
+    var optsUz = ['15% – 25%', '25% – 35%', '35% – 50%', "50% dan ko'proq"];
+    var optsRu = ['15% – 25%', '25% – 35%', '35% – 50%', 'Более 50%'];
     var opts = currentLang === 'ru' ? optsRu : optsUz;
     var keys = ['lt25', '25to50', '50to75', 'gt75'];
     return chip(12, seq.length) +
-      qTitle("Chet elda ishlash davrida oylik daromadingizning qancha qismini u yerda ovqat, uy ijarasi va mahalliy transport uchun sarflaysiz deb o'ylaysiz?",
+      qTitle("Chet elda ishlash davrida oylik daromadingizning qancha qismini u yerda ovqat, uy ijarasi va mahalliy transport uchun sarfladim deb o'ylaysiz?",
              'В период работы за рубежом какую долю Вашего месячного дохода, по Вашей оценке, Вы тратите за рубежом на питание, аренду жилья и местный транспорт?') +
       qSub('Bitta variantni tanlang.', 'Пожалуйста, выберите один вариант.') +
       '<ul class="opt-list">' +
@@ -686,9 +707,9 @@
   function rQ13() {
     var seq = buildSeq();
     return chip(13, seq.length) +
-      qTitle("Ushbu xorijga safar davomida sarflagan umumiy summangiz qancha (tur paket qiymati bundan mustasno)?",
+      qTitle("Xorijga safaringiz davomida, barcha turdagi xarajatlar uchun tahminan qancha mablag' sarfladingiz?",
              'Какую общую сумму, по Вашей оценке, Вы потратили во время этой поездки за рубежом, включая все виды расходов, но исключая стоимость пакетного тура?') +
-      qSub("Summa va valyutani ko'rsating.", 'Укажите сумму, валюту и количество лиц, охваченных этой суммой.') +
+      qSub("Turpaket qiymatini qo'shmagan holda", 'Укажите сумме без стоимости пакетного тура.') +
       '<div class="inline-fields">' +
       '<input type="number" class="survey-input" style="flex:2;margin-bottom:0" min="0" value="' + (answers.q13_amount || '') + '" placeholder="' + t('Summa...', 'Сумма...') + '" oninput="answers.q13_amount=this.value">' +
       currSel('q13_currency', answers.q13_currency) +

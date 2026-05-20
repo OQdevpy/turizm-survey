@@ -18,6 +18,7 @@
   <div class="sb-right">
     <a href="{% url 'dashboard:index' %}">📊 Dashboard</a>
     <a href="{% url 'staff_surveys:inbound' %}">↔ Inbound</a>
+    <button type="button" class="sb-reset" onclick="staffReset()" title="Yangi respondent bilan boshlash">↻ Reset</button>
     <a href="{% url 'accounts:logout' %}" class="sb-logout">Chiqish</a>
   </div>
 </div>
@@ -39,10 +40,10 @@
           </div>
           <div class="welcome-box">
             <div class="welcome-title" id="welcome-title">HURMATLI SAYOHATCHI,</div>
-            <p class="welcome-text" id="welcome-text">Sizni turizmni rivojlantirish va O'zbekistonning turizm hisobini yuritish maqsadida o'tkazilayotgan so'rovnomada qatnashishga taklif qilamiz.</p>
-            <p class="welcome-conf" id="welcome-conf">Javoblaringiz maxfiyligi "Rasmiy statistika to'g'risida"gi Qonun bilan kafolatlanadi.</p>
+            <p class="welcome-text" id="welcome-text">Turizm sohasini o'rganish va O'zbekistonning turizm yordamchi hisobini tuzish maqsadida o'tkazilayotgan ushbu so'rovnomada ishtirok etishingizni iltimos qilamiz. Mazkur so'rovnomaga kiritilgan barcha savollarga javob berish orqali bizga ko'maklashishingizni so'raymiz.</p>
+            <p class="welcome-conf" id="welcome-conf">Javoblaringiz maxfiyligi O'zbekiston Respublikasining "Rasmiy statistika to'g'risida"gi Qonuni bilan kafolatlanadi.</p>
           </div>
-          <button class="btn-start" id="start-btn" onclick="startSurvey()">SO'ROVNOMANI BOSHLASH</button>
+          <button class="btn-start" id="start-btn" onclick="startSurvey()">BOSHLASH</button>
         </div>
       </div>
     </div>

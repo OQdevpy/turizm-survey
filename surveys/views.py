@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods, require_POST
 
-from accounts.decorators import staff_required
+from accounts.decorators import staff_required, survey_entry_required
 
 from .models import SurveyResponse
 from .utils import parse_user_agent
@@ -289,7 +289,7 @@ def submit_public(request, survey_type):
 # STAFF (xodimlar uchun, login KERAK)
 # ============================================================
 
-@staff_required
+@survey_entry_required
 def staff_inbound(request):
     return render(request, 'surveys/inbound.html', {
         'is_staff_view': True,
@@ -297,7 +297,7 @@ def staff_inbound(request):
     })
 
 
-@staff_required
+@survey_entry_required
 def staff_outbound(request):
     return render(request, 'surveys/outbound.html', {
         'is_staff_view': True,
@@ -305,7 +305,7 @@ def staff_outbound(request):
     })
 
 
-@staff_required
+@survey_entry_required
 @require_POST
 @csrf_protect
 def submit_staff(request, survey_type):

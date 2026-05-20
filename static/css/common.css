@@ -120,6 +120,12 @@ button { font-family: inherit; cursor: pointer; }
 }
 .staff-bar .sb-logout { background: rgba(192,57,43,.6); }
 .staff-bar .sb-logout:hover { background: rgba(192,57,43,.85); }
+.staff-bar .sb-reset {
+  background: rgba(243,156,18,.55);
+  border: 1px solid rgba(255,255,255,.25);
+  cursor: pointer; font-family: inherit;
+}
+.staff-bar .sb-reset:hover { background: rgba(243,156,18,.85); }
 
 /* Mobile burger menu uchun */
 .staff-bar .sb-burger {

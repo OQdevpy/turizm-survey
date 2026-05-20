@@ -566,6 +566,28 @@
   function scGoHome() { goTo('page-lang'); }
   window.scGoHome = scGoHome;
 
+  // Faqat staff uchun — joriy holatni o'chirib boshiga qaytadi
+  // (yangi respondent bilan boshlash uchun)
+  function staffReset() {
+    if (!CFG.isStaffView) return;
+    var msg = currentLang === 'ru'
+      ? 'Сбросить текущие ответы и начать новый опрос?'
+      : 'Reset current answers and start a new survey?';
+    if (!window.confirm(msg)) return;
+    try { clearState(); } catch (e) {}
+    resetAnswers();
+    if (typeof scReset === 'function') {
+      try { scReset(); } catch (e) {}
+    }
+    currentQIdx = 0;
+    submitted = false;
+    SURVEY_START_TS = Date.now();
+    setLang(currentLang === 'ru' ? 'ru' : 'en');
+    goTo('page-lang');
+    window.scrollTo(0, 0);
+  }
+  window.staffReset = staffReset;
+
   function prevQ() {
     if (currentQIdx > 0) { currentQIdx--; renderQ(); scrollToTop(); }
   }

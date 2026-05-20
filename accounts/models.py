@@ -58,6 +58,10 @@ class StaffProfile(models.Model):
     region_code = models.CharField("Hudud kodi", max_length=10, blank=True, db_index=True)
     phone = models.CharField("Telefon raqami", max_length=20, blank=True)
     position = models.CharField("Lavozim", max_length=100, blank=True)
+    can_enter_surveys = models.BooleanField(
+        "So'rovnoma kiritish huquqi", default=True, db_index=True,
+        help_text="False bo'lsa xodim faqat monitoringga kira oladi, so'rovnoma kirita olmaydi.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

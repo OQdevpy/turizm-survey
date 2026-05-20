@@ -48,14 +48,14 @@
 {% block body %}
 <div class="staff-bar">
   <div class="sb-left">
-    <span class="sb-logo">👤 STAFF MONITORING</span>
+    <span class="sb-logo">👤 XODIM KUZATUVI</span>
     <span class="sb-meta">{{ staff_user.username }}</span>
   </div>
   <div class="sb-right">
-    <a href="{% url 'dashboard:monitoring' %}">🔍 Monitoring</a>
-    <a href="{% url 'dashboard:index' %}">📊 Dashboard</a>
-    <a href="{% url 'admin:index' %}">⚙ Admin</a>
-    <a href="{% url 'home' %}">🏠 Bosh</a>
+    <a href="{% url 'dashboard:monitoring' %}">🔍 Kuzatuv</a>
+    <a href="{% url 'dashboard:index' %}">📊 Boshqaruv paneli</a>
+    <a href="{% url 'admin:index' %}">⚙ Admin paneli</a>
+    <a href="{% url 'home' %}">🏠 Bosh sahifa</a>
     <a href="{% url 'accounts:logout' %}" class="sb-logout">Chiqish</a>
   </div>
 </div>
@@ -63,7 +63,7 @@
 <div class="dash-wrap">
   <div class="dash-h">
     <div>
-      <div class="breadcrumb">Dashboard / Monitoring / Staff</div>
+      <div class="breadcrumb">Boshqaruv paneli / Kuzatuv / Xodim</div>
       <h1>👤 {{ staff_user.get_full_name|default:staff_user.username }}</h1>
       <div style="color: var(--muted); font-size: 13px; margin-top: 4px;">
         @{{ staff_user.username }}
@@ -80,10 +80,10 @@
   {% else %}
     {% if suspicious_ips %}
       <div class="ms-suspicious-banner">
-        <h4>🚨 Diqqat: shubhali IP'lar topildi</h4>
+        <h4>🚨 Diqqat: shubhali IP manzillar topildi</h4>
         <div style="font-size: 13px; color: var(--text); margin-bottom: 8px;">
-          Bu xodimning <strong>{{ suspicious_ips|length }} ta</strong> IP manzilidan ham public (loginsiz) so'rovnoma yuborilgan.
-          Bu xodim o'zi turist sifatida public so'rovnoma to'ldirgan bo'lishi mumkin.
+          Bu xodimning <strong>{{ suspicious_ips|length }} ta</strong> IP manzilidan loginsiz (turist sifatida) ham so'rovnoma yuborilgan.
+          Bu xodim o'zi turist sifatida so'rovnoma to'ldirgan bo'lishi mumkin.
         </div>
         <div>
           {% for ip, cnt in suspicious_ips %}
@@ -123,9 +123,9 @@
         </div>
       </div>
 
-      <!-- Device turi -->
+      <!-- Qurilma turi -->
       <div class="ms-card">
-        <h3>📱 Device taqsimoti</h3>
+        <h3>📱 Qurilma taqsimoti</h3>
         <div class="ms-bar-list">
           {% for label, count in device_list %}
             <div class="ms-bar-row">
@@ -134,7 +134,7 @@
               <div class="val">{{ count }}</div>
             </div>
           {% empty %}
-            <div class="ms-empty">Device ma'lumotlari yo'q</div>
+            <div class="ms-empty">Qurilma ma'lumotlari yo'q</div>
           {% endfor %}
         </div>
       </div>
@@ -174,7 +174,7 @@
 
     {% if fingerprint_list %}
     <div class="ms-card" style="margin-bottom: 18px;">
-      <h3>📲 Device fingerprintlar (top 10)</h3>
+      <h3>📲 Qurilma fingerprintlar (top 10)</h3>
       <div class="ms-bar-list">
         {% for fp, count in fingerprint_list %}
           <div class="ms-bar-row">
@@ -204,7 +204,7 @@
               <th>Turi</th>
               <th>Davlat</th>
               <th>IP</th>
-              <th>Device</th>
+              <th>Qurilma</th>
               <th>OS</th>
               <th>Vaqt (s)</th>
               <th>Bo'lim</th>

@@ -24,3 +24,34 @@ def superuser_required(view_func):
             raise PermissionDenied("Faqat superuser uchun.")
         return view_func(request, *args, **kwargs)
     return _wrapped
+
+
+def survey_entry_required(view_func):
+    """Faqat so'rovnoma kiritish huquqi bor xodimlar kira oladi.
+
+    StaffProfile.can_enter_surveys False bo'lsa, PermissionDenied (403).
+    Superuser doim kira oladi (admin override).
+    """
+    @login_required(login_url='accounts:login')
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        user = request.user
+        if not (user.is_staff or user.is_superuser):
+            raise PermissionDenied("Sizda kirish huquqi yo'q.")
+        # Superuser doim kira oladi
+        if user.is_superuser:
+            return view_func(request, *args, **kwargs)
+        # StaffProfile bo'lsa va can_enter_surveys=False bo'lsa, taqiqlanadi
+        try:
+            if not user.staff_profile.can_enter_surveys:
+                raise PermissionDenied(
+                    "Sizning hisobingiz uchun so'rovnoma kiritish "
+                    "huquqi yopilgan. Faqat monitoringga kira olasiz."
+                )
+        except Exception as e:
+            if isinstance(e, PermissionDenied):
+                raise
+            # StaffProfile yo'q bo'lsa — default ruxsat
+            pass
+        return view_func(request, *args, **kwargs)
+    return _wrapped
