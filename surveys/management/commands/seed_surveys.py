@@ -579,6 +579,126 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("🚨 Fraud R3 (device fingerprint takrori, 5 ta): 5 ta"))
 
         # ============================================================
+        # GURUH K: Multi-language Inbound (15 ta) — turli til va davlatlar
+        # ============================================================
+        # Til -> tipik mamlakat va device kombinatsiyalari
+        multilang_inbound = [
+            # (lang, country, device_key, base_ip)
+            ('ar', 'Saudi Arabia', 'iphone_safari', '5.42.180.10'),
+            ('ar', 'UAE',          'samsung_chrome', '5.42.180.11'),
+            ('zh', 'China',        'xiaomi_chrome', '101.32.50.20'),
+            ('zh', 'China',        'huawei_chrome', '101.32.50.21'),
+            ('zh', 'China',        'iphone_safari', '101.32.50.22'),
+            ('fr', 'France',       'pixel_chrome', '92.100.40.30'),
+            ('fr', 'France',       'mac_safari', '92.100.40.31'),
+            ('de', 'Germany',      'huawei_chrome', '85.220.60.40'),
+            ('de', 'Germany',      'windows_chrome', '85.220.60.41'),
+            ('it', 'Italy',        'ipad_safari', '79.150.70.50'),
+            ('it', 'Italy',        'iphone_safari', '79.150.70.51'),
+            ('es', 'Spain',        'mac_safari', '88.5.80.60'),
+            ('es', 'Spain',        'samsung_chrome', '88.5.80.61'),
+            ('tg', 'Tajikistan',   'xiaomi_chrome', '92.51.90.70'),
+            ('tg', 'Tajikistan',   'samsung_chrome', '92.51.90.71'),
+        ]
+        for lang, country, dev_key, ip in multilang_inbound:
+            dev = dict(DEVICES[dev_key])
+            # Device fingerprint'ni tilga moslab yangilash (language/timezone)
+            lang_overrides = {
+                'ar': ('ar-SA', 'Asia/Riyadh'),
+                'zh': ('zh-CN', 'Asia/Shanghai'),
+                'fr': ('fr-FR', 'Europe/Paris'),
+                'de': ('de-DE', 'Europe/Berlin'),
+                'it': ('it-IT', 'Europe/Rome'),
+                'es': ('es-ES', 'Europe/Madrid'),
+                'tg': ('tg-TJ', 'Asia/Dushanbe'),
+            }
+            if lang in lang_overrides:
+                dev['language'], dev['timezone'] = lang_overrides[lang]
+            # GPS — Toshkent/Samarqand mehmonxonalar (turist UZ'da)
+            gps = GPS_HOTELS[random.randint(0, len(GPS_HOTELS) - 1)]
+            ts = _now_minus(days=random.randint(0, 14), hours=random.randint(0, 23))
+            created.append(_make(
+                survey_type=SurveyResponse.SURVEY_INBOUND,
+                source=SurveyResponse.SOURCE_PUBLIC,
+                language=lang,
+                data=_build_inbound_data(country, random.choice(PURPOSES), random.randint(3, 9)),
+                ip_address=ip,
+                device_info=dev,
+                latitude=Decimal(str(gps[0])),
+                longitude=Decimal(str(gps[1])),
+                location_accuracy=random.uniform(15, 60),
+                started_at=ts,
+                fill_duration_ms=random.randint(200_000, 500_000),
+            ))
+        self.stdout.write(self.style.SUCCESS(
+            f"🌐 Multi-lang Inbound: {len(multilang_inbound)} ta (ar/zh/fr/de/it/es/tg)"
+        ))
+
+        # ============================================================
+        # GURUH L: Outbound diversity (25 ta) — turli til va sayohat davlatlari
+        # ============================================================
+        # UZ fuqarolari — qaysi davlatga sayohat qildi va qaysi tilda javob berdi
+        OUTBOUND_LANG_OPTIONS = ['uz', 'ru']
+        EXTENDED_OUTBOUND_COUNTRIES = [
+            'Turkey', 'Kazakhstan', 'Russia', 'UAE', 'Saudi Arabia', 'Egypt', 'Thailand',
+            'South Korea', 'China', 'Germany', 'Iran', 'Iraq', 'Tajikistan', 'Kyrgyzstan',
+            'Azerbaijan', 'Vietnam', 'Singapore', 'Malaysia', 'India', 'United Kingdom',
+            'France', 'Italy', 'Spain', 'Japan', 'Pakistan',
+        ]
+        UZ_DEVICES = ['samsung_chrome', 'xiaomi_chrome', 'huawei_chrome',
+                      'iphone_safari', 'windows_chrome', 'windows_edge']
+        UZ_IPS = [
+            '195.158.16.45', '195.158.16.78', '195.158.16.121', '195.158.17.20',
+            '94.158.32.101', '94.158.32.152', '94.158.50.50', '94.158.50.99',
+            '213.230.108.55', '213.230.109.10', '213.230.109.88',
+            '178.218.207.10', '178.218.207.55', '178.218.150.30',
+            '84.54.64.20', '84.54.64.150', '84.54.80.5',
+        ]
+        # UZ GPS — turli viloyatlar
+        UZ_RETURN_GPS = [
+            (41.2579, 69.2812),  # Toshkent aeroport
+            (41.3275, 69.2817),  # Toshkent markaz
+            (41.3110, 69.2401),  # Toshkent boshqa
+            (39.7008, 66.9839),  # Samarqand aeroport
+            (39.6542, 66.9597),  # Samarqand markaz
+            (39.7747, 64.4286),  # Buxoro aeroport
+            (39.7758, 64.4214),  # Buxoro markaz
+            (40.9846, 71.5567),  # Namangan aeroport
+            (41.5848, 60.6417),  # Urgench aeroport
+            (40.5283, 70.9425),  # Andijon
+            (40.3717, 71.7842),  # Farg'ona
+        ]
+        for i in range(25):
+            lang = OUTBOUND_LANG_OPTIONS[i % 2]  # uz va ru navbatma-navbat
+            country = EXTENDED_OUTBOUND_COUNTRIES[i % len(EXTENDED_OUTBOUND_COUNTRIES)]
+            dev_key = UZ_DEVICES[i % len(UZ_DEVICES)]
+            dev = dict(DEVICES[dev_key])
+            # Til'ga moslash
+            dev['language'] = f"{lang}-UZ" if lang == 'uz' else 'ru-RU'
+            dev['timezone'] = 'Asia/Tashkent'
+            ip = UZ_IPS[i % len(UZ_IPS)]
+            gps = UZ_RETURN_GPS[i % len(UZ_RETURN_GPS)]
+            # Purpose — turli
+            purpose = random.choice(['leisure', 'friends', 'business', 'religion', 'health', 'education'])
+            ts = _now_minus(days=random.randint(0, 21), hours=random.randint(0, 23))
+            created.append(_make(
+                survey_type=SurveyResponse.SURVEY_OUTBOUND,
+                source=SurveyResponse.SOURCE_PUBLIC,
+                language=lang,
+                data=_build_outbound_data(country, purpose, random.randint(2, 14)),
+                ip_address=ip,
+                device_info=dev,
+                latitude=Decimal(str(gps[0])),
+                longitude=Decimal(str(gps[1])),
+                location_accuracy=random.uniform(10, 60),
+                started_at=ts,
+                fill_duration_ms=random.randint(150_000, 550_000),
+            ))
+        self.stdout.write(self.style.SUCCESS(
+            "🌐 Outbound diversity: 25 ta (uz/ru, har xil davlatlar va maqsadlar)"
+        ))
+
+        # ============================================================
         # Yakuniy hisobot
         # ============================================================
         self.stdout.write('')
