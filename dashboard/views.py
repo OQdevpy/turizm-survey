@@ -1265,6 +1265,72 @@ def _format_money(amount, currency=''):
         return ''
 
 
+def _build_expense_currency_table(labels, used_counter, by_currency_dict):
+    """Xarajat jadvali — valyutalar kolonka, qatorlar xarajat turlari.
+
+    Args:
+        labels: xarajat turlari ro'yxati (tartibli)
+        used_counter: Counter[label] -> used count
+        by_currency_dict: dict[label] -> dict[currency] -> list of amounts
+
+    Returns:
+        {
+          'currencies': ['USD', 'UZS', ...],  # umumiy summa DESC
+          'rows': [
+            {'label': 'Turar joy', 'used_count': 46,
+             'values': [14940, 12795687, 935, ...]},  # currencies tartibida
+            ...
+          ],
+          'totals': [sum_USD, sum_UZS, ...],  # currencies tartibida
+          'total_used': 309,
+        }
+    """
+    # Avval — barcha valyutalar bo'yicha umumiy summalarni hisoblaymiz
+    grand_totals = {}
+    label_sums = {}  # label -> {currency: sum}
+    for label in labels:
+        by_cur = by_currency_dict.get(label, {}) or {}
+        sums = {}
+        for cur, amounts in by_cur.items():
+            try:
+                total = sum(float(a) for a in amounts if a is not None and float(a) > 0)
+            except (TypeError, ValueError):
+                total = 0
+            if total > 0:
+                sums[cur] = round(total, 2)
+                grand_totals[cur] = grand_totals.get(cur, 0) + total
+        label_sums[label] = sums
+
+    # Valyutalarni umumiy summa bo'yicha sortlash (eng katta avval)
+    currencies = sorted(grand_totals.keys(), key=lambda c: -grand_totals[c])
+    # Agar valyuta yo'q bo'lsa, bo'sh table
+    if not currencies:
+        return {'currencies': [], 'rows': [], 'totals': [], 'total_used': 0}
+
+    rows = []
+    total_used = 0
+    for label in labels:
+        used = used_counter.get(label, 0)
+        if used == 0:
+            continue  # bo'sh qatorlarni ko'rsatmaymiz
+        sums = label_sums.get(label, {})
+        values = [round(sums.get(cur, 0), 2) for cur in currencies]
+        rows.append({
+            'label': label,
+            'used_count': used,
+            'values': values,
+        })
+        total_used += used
+
+    totals = [round(grand_totals.get(cur, 0), 2) for cur in currencies]
+    return {
+        'currencies': currencies,
+        'rows': rows,
+        'totals': totals,
+        'total_used': total_used,
+    }
+
+
 def _money_buckets(amounts):
     """Xarajat summalarini diapazonlarga bo'lish (USD ekvivalent emas — yaqinroqlik uchun)."""
     buckets = [
@@ -1454,7 +1520,7 @@ def _analyze_inbound(qs):
     # Currency-aware breakdown
     stats['total_spent_currencies'] = _currency_stats(total_spent_by_currency)
     stats['per_person_currencies'] = _currency_stats(per_person_by_currency)
-    # Q17 — har xarajat qatori uchun to'liq breakdown
+    # Q17 — har xarajat qatori uchun to'liq breakdown (eski format saqlangan)
     stats['expense_breakdown'] = [
         {
             'label': label,
@@ -1465,6 +1531,10 @@ def _analyze_inbound(qs):
         }
         for label in INBOUND_EXP_LABELS
     ]
+    # Yangi: valyutalar — kolonka, qatorlar — xarajat turlari, pastida Umumiy
+    stats['expense_currency_table'] = _build_expense_currency_table(
+        INBOUND_EXP_LABELS, expense_used, expense_by_currency,
+    )
     # Eski strukturani saqlash (orqaga moslik uchun)
     stats['expense_used'] = [{'label': l, 'count': expense_used.get(l, 0)} for l in INBOUND_EXP_LABELS]
     stats['expense_in_package'] = [{'label': l, 'count': expense_in_package.get(l, 0)} for l in INBOUND_EXP_LABELS]
@@ -1610,7 +1680,7 @@ def _analyze_outbound(qs):
     # Currency-aware breakdown
     stats['total_spent_currencies'] = _currency_stats(total_spent_by_currency)
     stats['per_person_currencies'] = _currency_stats(per_person_by_currency)
-    # Q14 — har xarajat qatori uchun to'liq breakdown
+    # Q14 — har xarajat qatori uchun to'liq breakdown (eski)
     ordered_labels = [lbl for _, lbl in OUTBOUND_EXP_LABELS]
     stats['expense_breakdown'] = [
         {
@@ -1622,6 +1692,10 @@ def _analyze_outbound(qs):
         }
         for label in ordered_labels
     ]
+    # Yangi: valyutalar — kolonka, pastida Umumiy
+    stats['expense_currency_table'] = _build_expense_currency_table(
+        ordered_labels, expense_used, expense_by_currency,
+    )
     # Eski strukturani saqlash
     stats['expense_used'] = [{'label': l, 'count': expense_used.get(l, 0)} for l in ordered_labels]
     stats['expense_in_package'] = [{'label': l, 'count': expense_in_pkg.get(l, 0)} for l in ordered_labels]

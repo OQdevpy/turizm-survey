@@ -321,41 +321,51 @@
   {% endif %}
 </div>
 
-{# Q17 — Xarajatlar jadvali (har qator: count + per-currency) #}
+{# Q17 — Xarajatlar jadvali: valyutalar — kolonka, pastida Umumiy #}
 <div class="q-block">
   <h3>{{ labels.q17 }} <span class="q-count">valyuta bo'yicha</span></h3>
-  <table class="exp-table">
-    <thead>
-      <tr>
-        <th>Xarajat turi</th>
-        <th title="Jami foydalanganlar (paket yoki summa)">Jami</th>
-        <th title="Paketga kiritilgan">Paketda</th>
-        <th title="Summa kiritilgan">Summa</th>
-        <th>Valyuta bo'yicha (count × avg | sum)</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in s.expense_breakdown %}
-        {% if item.used_count %}
+  {% if s.expense_currency_table.rows %}
+  <div class="exp-currency-wrap">
+    <table class="exp-currency-table">
+      <thead>
         <tr>
-          <td class="exp-name-cell">{{ item.label }}</td>
-          <td class="num">{{ item.used_count }}</td>
-          <td class="num">{% if item.in_package_count %}{{ item.in_package_count }}{% else %}—{% endif %}</td>
-          <td class="num">{% if item.has_amount_count %}{{ item.has_amount_count }}{% else %}—{% endif %}</td>
-          <td>
-            {% for cur in item.currencies %}
-              <span class="cur-sum-chip">
-                <strong>{{ cur.currency }}</strong> — {{ cur.sum|floatformat:0|intcomma }}
-              </span>
-            {% empty %}
-              <span class="empty-currency">— faqat paketda —</span>
-            {% endfor %}
-          </td>
+          <th rowspan="2" class="col-name">Xarajat turi</th>
+          <th rowspan="2" class="col-jami">Jami</th>
+          <th colspan="{{ s.expense_currency_table.currencies|length }}" class="col-cur-group">Valyuta bo'yicha (summa)</th>
         </tr>
-        {% endif %}
-      {% endfor %}
-    </tbody>
-  </table>
+        <tr>
+          {% for cur in s.expense_currency_table.currencies %}
+            <th class="col-cur">{{ cur }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in s.expense_currency_table.rows %}
+        <tr>
+          <td class="exp-name-cell">{{ row.label }}</td>
+          <td class="num">{{ row.used_count }}</td>
+          {% for v in row.values %}
+            <td class="num cur-cell {% if v %}has-val{% endif %}">
+              {% if v %}{{ v|floatformat:0|intcomma }}{% else %}—{% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr class="totals-row">
+          <td class="exp-name-cell"><strong>Umumiy</strong></td>
+          <td class="num"><strong>{{ s.expense_currency_table.total_used }}</strong></td>
+          {% for t in s.expense_currency_table.totals %}
+            <td class="num cur-cell has-val"><strong>{{ t|floatformat:0|intcomma }}</strong></td>
+          {% endfor %}
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  {% else %}
+    <div class="empty-q">Xarajat ma'lumotlari yo'q.</div>
+  {% endif %}
 </div>
 
 {# Q18 — Reytinglar #}

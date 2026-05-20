@@ -223,6 +223,53 @@
     color: var(--blue); font-family: monospace;
     font-weight: 800; font-size: 12px;
   }
+
+  /* Expense × Currency jadval (Q17 / Q14) — currencies as columns */
+  .exp-currency-wrap { overflow-x: auto; }
+  .exp-currency-table {
+    width: 100%; border-collapse: collapse; font-size: 12px;
+    background: #fff; min-width: 100%;
+  }
+  .exp-currency-table thead th {
+    background: var(--navy); color: #fff; padding: 8px 10px;
+    font-size: 11px; font-weight: 700; text-align: center;
+    border-right: 1px solid rgba(255,255,255,0.1);
+    position: sticky; top: 0;
+  }
+  .exp-currency-table thead th.col-name { text-align: left; min-width: 180px; }
+  .exp-currency-table thead th.col-jami { width: 70px; }
+  .exp-currency-table thead th.col-cur {
+    font-family: monospace; font-size: 11px;
+    background: #1a5fa8; min-width: 90px;
+  }
+  .exp-currency-table thead th.col-cur-group {
+    background: #1251a3; font-size: 10px; letter-spacing: 0.5px;
+  }
+  .exp-currency-table tbody td {
+    padding: 7px 10px; border-bottom: 1px solid #eef3fa;
+    font-variant-numeric: tabular-nums;
+  }
+  .exp-currency-table tbody tr:hover { background: #f7faff; }
+  .exp-currency-table .exp-name-cell {
+    font-weight: 700; color: var(--text);
+    word-break: break-word;
+  }
+  .exp-currency-table .num { text-align: right; }
+  .exp-currency-table .cur-cell {
+    color: var(--muted); font-size: 12px;
+  }
+  .exp-currency-table .cur-cell.has-val {
+    color: var(--navy); font-weight: 600;
+  }
+  .exp-currency-table tfoot .totals-row td {
+    background: #f0f5fc; border-top: 2px solid var(--navy);
+    color: var(--navy); font-weight: 800;
+    padding: 10px;
+  }
+  .exp-currency-table tfoot .totals-row .exp-name-cell {
+    color: var(--navy);
+    text-transform: uppercase; letter-spacing: 0.5px; font-size: 11px;
+  }
 </style>
 {% endblock %}
 
