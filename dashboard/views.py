@@ -779,6 +779,47 @@ def export_excel(request):
     ws9.column_dimensions['F'].width = 100
     ws9.freeze_panes = 'A2'
 
+    # ============================================
+    # SHEET 10: MASTER — barcha savollar bitta keng sheetda (~199 ustun)
+    # Inbound va Outbound savollarini IN.* / OUT.* prefiks bilan birlashtiradi.
+    # Pivot table, Power BI, statistik tahlil uchun ideal.
+    # ============================================
+    ws10 = wb.create_sheet("Master (barcha savollar)")
+    master_columns = _build_master_columns()
+    ws10.append(master_columns)
+
+    # Header'ni guruh bo'yicha ranglash
+    in_fill = PatternFill(start_color='1A5FA8', end_color='1A5FA8', fill_type='solid')
+    out_fill = PatternFill(start_color='2E7D32', end_color='2E7D32', fill_type='solid')
+    header_font_compact = Font(bold=True, color='FFFFFF', size=10)
+    for col_idx, col_name in enumerate(master_columns, start=1):
+        cell = ws10.cell(row=1, column=col_idx)
+        cell.font = header_font_compact
+        cell.alignment = header_align
+        if col_name.startswith('IN.'):
+            cell.fill = in_fill
+        elif col_name.startswith('OUT.'):
+            cell.fill = out_fill
+        else:
+            cell.fill = header_fill
+
+    # Har bir SurveyResponse uchun bitta satr
+    for idx, r in enumerate(qs.iterator(chunk_size=500), start=1):
+        row = _build_master_row(r, idx, master_columns)
+        ws10.append(row)
+
+    # Ustun kengligi
+    for col_idx, col_name in enumerate(master_columns, start=1):
+        col_letter = get_column_letter(col_idx)
+        width = max(len(col_name) + 2, 12)
+        if col_name.startswith(('IN.Q17.', 'IN.Q18.', 'OUT.Q14.')):
+            width = max(width, 16)
+        elif col_name.startswith(('IN.', 'OUT.')):
+            width = max(width, 18)
+        ws10.column_dimensions[col_letter].width = min(width, 40)
+    ws10.row_dimensions[1].height = 45
+    ws10.freeze_panes = 'I2'  # 1-qator + 1-8 ustun freeze
+
     # Save and return
     buf = io.BytesIO()
     wb.save(buf)
@@ -791,6 +832,276 @@ def export_excel(request):
     )
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
+
+
+# ============================================
+# MASTER SHEET helpers — barcha savollar bitta keng formatda
+# ============================================
+
+# Inbound shaharlar (Q6) — har shahar uchun alohida ustun
+_MASTER_INBOUND_CITIES = [
+    'Tashkent', 'Samarkand', 'Bukhara', 'Khiva', 'Shakhrisabz', 'Termez',
+    'Kokand', 'Fergana', 'Namangan', 'Andijan', 'Nukus', 'Urgench', 'Other',
+]
+# Inbound ovqat joylari (Q8) — har biri uchun alohida bool ustun
+_MASTER_INBOUND_FOOD = [
+    'restaurants', 'street', 'fastfood', 'national',
+    'friends_home', 'rented', 'other',
+]
+# Inbound Q18 reyting xizmatlari (12 ta)
+_MASTER_INBOUND_RATINGS = [
+    'r0_intl_transport', 'r1_passport_control', 'r2_hospitality',
+    'r3_value_for_money', 'r4_food', 'r5_cleanliness',
+    'r6_local_transport', 'r7_safety', 'r8_culture',
+    'r9_accommodation', 'r10_health', 'r11_communication',
+]
+# Outbound Q14 xarajat qatorlari (sub-rows 1.1/1.2 bilan)
+_MASTER_OUTBOUND_EXP_ROWS = [
+    '1', '1.1', '1.2', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13',
+]
+
+
+def _build_master_columns():
+    """Master sheet'ning barcha ustunlarini ro'yxat qilib qaytaradi."""
+    cols = []
+    # 1) Identifikatsiya va meta (8)
+    cols += ['#', 'ID', 'Turi', 'Manba', 'Til',
+             'Boshlangan', 'Yakunlangan', "To'ldirish (s)"]
+    # 2) Xodim va bo'lim (7)
+    cols += ['Xodim login', 'Xodim F.I.SH', 'Xodim telefon',
+             "Bo'lim kodi", "Bo'lim nomi", 'Region kodi', 'Post turi']
+    # 3) Tarmoq va device (10)
+    cols += ['IP', 'Subnet /24', 'Device turi', 'OS', 'Brauzer',
+             'Screen', 'Platform', 'Til (client)', 'Timezone', 'User-Agent']
+    # 4) GPS (5)
+    cols += ['GPS bormi', 'Latitude', 'Longitude', 'GPS aniqlik (m)', 'Google Maps URL']
+    # 5) Screening (4)
+    cols += ['Filtr holati', 'F1', 'F2', 'F3']
+    # 6) Auto-summary (5)
+    cols += ['Davlat', 'Maqsad', 'Tunlar', 'Xarajat (umumiy)', 'Valyuta']
+
+    # 7) INBOUND
+    cols += ['IN.Q1 (Doimiy davlat)', 'IN.Q2 (Pasport)', 'IN.Q2_country (Boshqa pasport)',
+             'IN.Q3 (Maqsad)', 'IN.Q4 (Biznes turi)',
+             'IN.Q5_nights', 'IN.Q5_zero']
+    cols += [f'IN.Q6.{c}' for c in _MASTER_INBOUND_CITIES]
+    cols += ['IN.Q7 (Turar joy)']
+    cols += [f'IN.Q8.{f}' for f in _MASTER_INBOUND_FOOD]
+    cols += ['IN.Q9 (Paket?)',
+             'IN.Q10_total', 'IN.Q10_uz', 'IN.Q11 (Paket kishi)',
+             'IN.Q12_amount', 'IN.Q12_currency',
+             'IN.Q13 (Kelish)', 'IN.Q13_airline',
+             'IN.Q14 (Ketish)', 'IN.Q14_airline',
+             'IN.Q15 (Daromad ulushi)',
+             'IN.Q16_sum', 'IN.Q16_currency', 'IN.Q16_persons']
+    # Q17 — 14 qator × 3
+    for n in range(1, 15):
+        cols += [f'IN.Q17.r{n}.amount', f'IN.Q17.r{n}.currency', f'IN.Q17.r{n}.inPackage']
+    # Q18 — 12 reyting
+    cols += [f'IN.Q18.{r}' for r in _MASTER_INBOUND_RATINGS]
+    cols += ['IN.Q19 (Izoh)']
+
+    # 8) OUTBOUND
+    cols += ['OUT.Q1 (Asosiy davlat)', 'OUT.Q2 (Maqsad)', 'OUT.Q3 (Biznes turi)',
+             'OUT.Q4_val (Tunlar)',
+             'OUT.Q5 (Turar joy)', 'OUT.Q6 (Paket?)',
+             'OUT.Q7 (Paket tunlari)', 'OUT.Q8 (Paket kishi)',
+             'OUT.Q9_amount', 'OUT.Q9_currency',
+             'OUT.Q10 (Chiqish)', 'OUT.Q10_airline',
+             'OUT.Q11 (Qaytish)', 'OUT.Q11_airline',
+             'OUT.Q12 (Daromad ulushi)',
+             'OUT.Q13_amount', 'OUT.Q13_currency', 'OUT.Q13_persons']
+    # Q14 — sub-rowlar bilan
+    for n in _MASTER_OUTBOUND_EXP_ROWS:
+        cols += [f'OUT.Q14.r{n}.amount', f'OUT.Q14.r{n}.currency', f'OUT.Q14.r{n}.inPkg']
+
+    return cols
+
+
+def _ipnetwork24(ip):
+    """IPv4 ni /24 subnet'ga aylantiradi."""
+    if not ip or ':' in ip:
+        return ip or ''
+    parts = ip.split('.')
+    if len(parts) != 4:
+        return ip
+    return f"{parts[0]}.{parts[1]}.{parts[2]}.0/24"
+
+
+def _yn(value):
+    """Bool -> 'Ha' / 'Yo'q' / ''. None bo'lsa bo'sh."""
+    if value is None:
+        return ''
+    return 'Ha' if value else "Yo'q"
+
+
+def _build_master_row(r, idx, columns):
+    """Bitta SurveyResponse'ni master sheet qatoriga aylantiradi.
+
+    columns ro'yxati tartibi bo'yicha qiymatlar qaytaradi (bo'sh joy = '').
+    """
+    d = r.data or {}
+    di = r.device_info or {}
+    sc = r.screening_data or {}
+
+    # Staff ma'lumotlari
+    staff_login, staff_full, staff_phone = '', '', ''
+    if r.staff:
+        staff_login = r.staff.username or ''
+        try:
+            staff_full = r.staff.staff_profile.full_name or r.staff.get_full_name() or r.staff.username
+            staff_phone = r.staff.staff_profile.phone or ''
+        except Exception:
+            staff_full = r.staff.get_full_name() or r.staff.username
+
+    # Bo'lim
+    office_code, office_name, region_code, post_type = '', '', '', ''
+    if r.postal_office:
+        office_code = r.postal_office.code or ''
+        office_name = r.postal_office.name or ''
+        region_code = r.postal_office.region_code or ''
+        post_type = r.postal_office.get_post_type_display() if r.postal_office else ''
+
+    # GPS
+    gmaps_url = ''
+    if r.latitude is not None and r.longitude is not None:
+        gmaps_url = f'https://www.google.com/maps?q={r.latitude},{r.longitude}'
+
+    # To'liq qiymatlar map'i — har ustun nomi -> qiymat
+    values = {
+        '#': idx,
+        'ID': str(r.id),
+        'Turi': r.get_survey_type_display(),
+        'Manba': r.get_source_display(),
+        'Til': r.language or '',
+        'Boshlangan': r.started_at.strftime('%Y-%m-%d %H:%M:%S') if r.started_at else '',
+        'Yakunlangan': r.completed_at.strftime('%Y-%m-%d %H:%M:%S') if r.completed_at else '',
+        "To'ldirish (s)": round(r.fill_duration_ms / 1000, 1) if r.fill_duration_ms else '',
+        'Xodim login': staff_login,
+        'Xodim F.I.SH': staff_full,
+        'Xodim telefon': staff_phone,
+        "Bo'lim kodi": office_code,
+        "Bo'lim nomi": office_name,
+        'Region kodi': region_code,
+        'Post turi': post_type,
+        'IP': r.ip_address or '',
+        'Subnet /24': _ipnetwork24(r.ip_address or ''),
+        'Device turi': r.device_type or '',
+        'OS': r.os_name or '',
+        'Brauzer': r.browser_name or '',
+        'Screen': di.get('screen', '') if isinstance(di, dict) else '',
+        'Platform': di.get('platform', '') if isinstance(di, dict) else '',
+        'Til (client)': di.get('language', '') if isinstance(di, dict) else '',
+        'Timezone': di.get('timezone', '') if isinstance(di, dict) else '',
+        'User-Agent': (r.user_agent or '')[:200],
+        'GPS bormi': _yn(r.location_granted),
+        'Latitude': float(r.latitude) if r.latitude is not None else '',
+        'Longitude': float(r.longitude) if r.longitude is not None else '',
+        'GPS aniqlik (m)': float(r.location_accuracy) if r.location_accuracy is not None else '',
+        'Google Maps URL': gmaps_url,
+        'Filtr holati': r.get_screening_status_display(),
+        'F1': sc.get('F1', '') or '',
+        'F2': sc.get('F2', '') or '',
+        'F3': sc.get('F3', '') or '',
+        'Davlat': r.country or '',
+        'Maqsad': r.purpose or '',
+        'Tunlar': r.nights if r.nights is not None else '',
+        'Xarajat (umumiy)': float(r.total_spent) if r.total_spent else '',
+        'Valyuta': r.spent_currency or '',
+    }
+
+    # ============================================================
+    # Inbound bo'lsa — IN.* ustunlarni to'ldiramiz
+    # ============================================================
+    if r.survey_type == SurveyResponse.SURVEY_INBOUND:
+        values['IN.Q1 (Doimiy davlat)'] = d.get('q1', '')
+        values['IN.Q2 (Pasport)'] = d.get('q2', '')
+        values['IN.Q2_country (Boshqa pasport)'] = d.get('q2_country', '')
+        values['IN.Q3 (Maqsad)'] = d.get('q3', '')
+        values['IN.Q4 (Biznes turi)'] = d.get('q4', '')
+        values['IN.Q5_nights'] = d.get('q5_nights', '')
+        values['IN.Q5_zero'] = _yn(d.get('q5_zero')) if 'q5_zero' in d else ''
+        # Q6: har shahar uchun tunlar
+        q6 = d.get('q6') or {}
+        for city in _MASTER_INBOUND_CITIES:
+            if isinstance(q6, dict) and city in q6 and isinstance(q6[city], dict):
+                values[f'IN.Q6.{city}'] = q6[city].get('nights', '')
+            else:
+                values[f'IN.Q6.{city}'] = ''
+        values['IN.Q7 (Turar joy)'] = d.get('q7', '') if d.get('q7') is not None else ''
+        # Q8: har ovqat joyi uchun bool
+        q8 = d.get('q8') or {}
+        for food in _MASTER_INBOUND_FOOD:
+            if isinstance(q8, dict) and q8.get(food):
+                values[f'IN.Q8.{food}'] = 'Ha'
+            else:
+                values[f'IN.Q8.{food}'] = ''
+        values['IN.Q9 (Paket?)'] = d.get('q9', '')
+        values['IN.Q10_total'] = d.get('q10_total', '')
+        values['IN.Q10_uz'] = d.get('q10_uz', '')
+        values['IN.Q11 (Paket kishi)'] = d.get('q11', '')
+        values['IN.Q12_amount'] = d.get('q12_amount', '')
+        values['IN.Q12_currency'] = d.get('q12_currency', '')
+        values['IN.Q13 (Kelish)'] = d.get('q13', '')
+        values['IN.Q13_airline'] = d.get('q13_airline', '')
+        values['IN.Q14 (Ketish)'] = d.get('q14', '')
+        values['IN.Q14_airline'] = d.get('q14_airline', '')
+        values['IN.Q15 (Daromad ulushi)'] = d.get('q15', '')
+        values['IN.Q16_sum'] = d.get('q16_sum', '')
+        values['IN.Q16_currency'] = d.get('q16_currency', '')
+        values['IN.Q16_persons'] = d.get('q16_persons', '')
+        # Q17 — 14 qator
+        q17 = d.get('q17') or {}
+        for n in range(1, 15):
+            row = q17.get(f'r{n}') if isinstance(q17, dict) else None
+            row = row if isinstance(row, dict) else {}
+            values[f'IN.Q17.r{n}.amount'] = row.get('amount', '')
+            values[f'IN.Q17.r{n}.currency'] = row.get('currency', '')
+            values[f'IN.Q17.r{n}.inPackage'] = _yn(row.get('inPackage')) if row else ''
+        # Q18 — 12 reyting
+        q18 = d.get('q18') or {}
+        for i, label in enumerate(_MASTER_INBOUND_RATINGS):
+            if isinstance(q18, dict):
+                v = q18.get(f'r{i}')
+                values[f'IN.Q18.{label}'] = v if v is not None else ''
+            else:
+                values[f'IN.Q18.{label}'] = ''
+        values['IN.Q19 (Izoh)'] = (d.get('q19') or '')[:1000]
+
+    # ============================================================
+    # Outbound bo'lsa — OUT.* ustunlarni to'ldiramiz
+    # ============================================================
+    else:
+        values['OUT.Q1 (Asosiy davlat)'] = d.get('q1', '')
+        values['OUT.Q2 (Maqsad)'] = d.get('q2', '')
+        values['OUT.Q3 (Biznes turi)'] = d.get('q3', '')
+        # q4_val (yangi) yoki q4_nights (eski)
+        values['OUT.Q4_val (Tunlar)'] = d.get('q4_val', d.get('q4_nights', ''))
+        values['OUT.Q5 (Turar joy)'] = d.get('q5', '')
+        values['OUT.Q6 (Paket?)'] = d.get('q6', '')
+        values['OUT.Q7 (Paket tunlari)'] = d.get('q7', '')
+        values['OUT.Q8 (Paket kishi)'] = d.get('q8', d.get('q8_persons', ''))
+        values['OUT.Q9_amount'] = d.get('q9_amount', '')
+        values['OUT.Q9_currency'] = d.get('q9_currency', '')
+        values['OUT.Q10 (Chiqish)'] = d.get('q10', '')
+        values['OUT.Q10_airline'] = d.get('q10_airline', '')
+        values['OUT.Q11 (Qaytish)'] = d.get('q11', '')
+        values['OUT.Q11_airline'] = d.get('q11_airline', '')
+        values['OUT.Q12 (Daromad ulushi)'] = d.get('q12', '')
+        values['OUT.Q13_amount'] = d.get('q13_amount', d.get('q13_sum', ''))
+        values['OUT.Q13_currency'] = d.get('q13_currency', '')
+        values['OUT.Q13_persons'] = d.get('q13_persons', '')
+        # Q14 — sub-rowlar bilan
+        q14 = d.get('q14') or {}
+        for n in _MASTER_OUTBOUND_EXP_ROWS:
+            row = q14.get(f'r{n}') if isinstance(q14, dict) else None
+            row = row if isinstance(row, dict) else {}
+            values[f'OUT.Q14.r{n}.amount'] = row.get('amount', '')
+            values[f'OUT.Q14.r{n}.currency'] = row.get('currency', '')
+            values[f'OUT.Q14.r{n}.inPkg'] = _yn(row.get('inPkg')) if row else ''
+
+    # Tartib bo'yicha qaytarish — bo'lmagan kalitlar uchun bo'sh
+    return [values.get(col, '') for col in columns]
 
 
 # ============================================
@@ -903,6 +1214,55 @@ def _nights_buckets(nights_list):
         if count:
             result.append({'label': label, 'count': count})
     return result
+
+
+def _currency_stats(amounts_by_currency):
+    """Valyuta bo'yicha statistika.
+
+    Args:
+        amounts_by_currency: dict[currency_code] -> list[float]
+    Returns:
+        list of {currency, count, sum, avg, median, min, max}, count DESC
+    """
+    result = []
+    for cur, amounts in (amounts_by_currency or {}).items():
+        # Faqat musbat sonlar
+        clean = []
+        for a in amounts or []:
+            try:
+                v = float(a)
+                if v > 0:
+                    clean.append(v)
+            except (TypeError, ValueError):
+                continue
+        if not clean:
+            continue
+        clean_sorted = sorted(clean)
+        n = len(clean_sorted)
+        if n % 2 == 1:
+            median = clean_sorted[n // 2]
+        else:
+            median = (clean_sorted[n // 2 - 1] + clean_sorted[n // 2]) / 2
+        total = sum(clean)
+        result.append({
+            'currency': cur or '—',
+            'count': n,
+            'sum': round(total, 2),
+            'avg': round(total / n, 2),
+            'median': round(median, 2),
+            'min': round(min(clean), 2),
+            'max': round(max(clean), 2),
+        })
+    result.sort(key=lambda x: (-x['count'], x['currency']))
+    return result
+
+
+def _format_money(amount, currency=''):
+    """Pul summasini o'qib bo'ladigan formatga keltiradi: '1,234.56 USD'."""
+    try:
+        return f"{float(amount):,.2f} {currency}".strip()
+    except (TypeError, ValueError):
+        return ''
 
 
 def _money_buckets(amounts):
