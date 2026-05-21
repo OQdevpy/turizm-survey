@@ -119,8 +119,8 @@
   var T = {
     en: {
       welcome_title: "DEAR TRAVELER,",
-      welcome_text: 'We kindly ask you to participate in this survey, which is carried out to study tourism development and compile the tourism satellite account of Uzbekistan. We would be grateful if you could answer the questions in this questionnaire.',
-      welcome_conf: 'Confidentiality of your responses is guaranteed by the Law of the Republic of Uzbekistan "On Official Statistics".',
+      welcome_text: 'We kindly ask you to participate in this survey, which is conducted to study tourism development and compile the Tourism Satellite Account of Uzbekistan. We would be grateful if you could complete this questionnaire.',
+      welcome_conf: 'The Confidentiality of your responses is guaranteed under the Law of the Republic of Uzbekistan "On Official Statistics".',
       start: "START",
       back: '← Back',
       next: 'Next →',
@@ -759,7 +759,7 @@
     var seq = buildSeq();
     var sel = answers.q1 || '';
     return chip(1, seq.length) +
-      qTitle('In which country have you usually lived during the past 12 months?',
+      qTitle('In which country have you usually lived over the past 12 months?',
              'В какой стране Вы обычно проживали в течение последних 12 месяцев?') +
       qSub('Single answer only', 'Только один ответ') +
       '<div class="search-wrap"><span class="search-icon">🔍</span><input type="text" class="search-input" id="csr1" placeholder="' + T[currentLang].search + '" oninput="filterC(\'clist1\',this.value)"></div>' +
@@ -937,7 +937,7 @@
       { id: 'other', en: 'Other, please specify', ru: 'Другое, пожалуйста укажите' }
     ];
     return chip(8, seq.length) +
-      qTitle('Where did you purchase food and drinks?', 'Скажите, пожалуйста, в каких типах заведений или мест Вы покупали еду и напитки?') +
+      qTitle('Where did you get food and drinks?', 'Скажите, пожалуйста, в каких типах заведений или мест Вы покупали еду и напитки?') +
       qSub('Several answers are permissible.', 'Допускается несколько ответов.') +
       '<div class="checkbox-group">' +
       opts.map(function (o) {
@@ -1057,8 +1057,8 @@
   function rQ15() {
     var seq = buildSeq();
     var v = answers.q15 || '';
-    var optsEn = ['Less than 25%', '25% – 50%', '50% – 75%', 'More than 75%'];
-    var optsRu = ['Менее 25%', '25% – 50%', '50% – 75%', 'Более 75%'];
+    var optsEn = ['15% – 25%', '25% – 35%', '35% – 50%', 'More than 50%'];
+    var optsRu = ['15% – 25%', '25% – 35%', '35% – 50%', 'Более 50%'];
     var opts = currentLang === 'ru' ? optsRu : optsEn;
     return chip(15, seq.length) +
       qTitle('During your period of employment in Uzbekistan, how much of your monthly income do you estimate you spend here on food, rent, and local transportation?',
@@ -1073,10 +1073,10 @@
   function rQ16() {
     var seq = buildSeq();
     return chip(16, seq.length) +
-      qTitle('What total amount did you spend during your visit to Uzbekistan, including all types of expenses but excluding the cost of the package tour?',
-             'Какую общую сумму денежных средств, по Вашей оценке, Вы потратили во время визита в Узбекистан, включая все виды расходов, но без учёта стоимости пакетного тура?') +
-      qSub('If all expenses are included in the package tour, please indicate that.',
-           'Если все расходы включены в стоимость пакетного тура, пожалуйста, укажите это.') +
+      qTitle('What was the total amount you spent, approximately during your visit to Uzbekistan, including all types of expenses?',
+             'Какую общую сумму денежных средств, по Вашей оценке, Вы потратили во время визита в Узбекистан, включая все виды расходов?') +
+      qSub('Exclude the cost of the package tour.',
+           'Укажите сумму без учёта стоимости пакетного тура.') +
       '<div class="inline-fields">' +
       '<input type="number" class="survey-input" style="flex:2;margin-bottom:0" min="0" value="' + (answers.q16_sum || '') + '" placeholder="' + t('Amount...', 'Сумма...') + '" oninput="answers.q16_sum=this.value">' +
       currSel('q16_currency', answers.q16_currency) +
