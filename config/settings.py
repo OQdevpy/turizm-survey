@@ -176,13 +176,31 @@ os.makedirs(LOG_DIR, exist_ok=True)
 
 # Security (production)
 SECURE_COOKIES = config('SECURE_COOKIES', default=not DEBUG, cast=bool)
+
+# Cookie qattiqlashtirish — XSS orqali cookie o'g'irlashning oldini oladi.
+# HTTPONLY har doim yoqiladi (dev'da ham), SECURE faqat HTTPS bo'lganda.
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True   # CSRF token shablonda {% csrf_token %} orqali olinadi, AJAX'ga zarari yo'q
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# CSRF trusted origins — Django 4+ da HTTPS Origin header'ni tekshiradi.
+# .env'da CSRF_TRUSTED_ORIGINS="https://savdo-tablet.stat.uz,https://boshqa.example" deb berish mumkin.
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default='https://savdo-tablet.stat.uz',
+    cast=Csv(),
+)
+
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SESSION_COOKIE_SECURE = SECURE_COOKIES
     CSRF_COOKIE_SECURE = SECURE_COOKIES
+    SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)  # Nginx allaqachon 301 qiladi
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_BROWSER_XSS_FILTER = True
+    SECURE_REFERRER_POLICY = 'same-origin'
     X_FRAME_OPTIONS = 'DENY'
