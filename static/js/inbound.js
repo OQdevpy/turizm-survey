@@ -1057,12 +1057,12 @@
   function rQ15() {
     var seq = buildSeq();
     var v = answers.q15 || '';
-    var optsEn = ['15% – 25%', '25% – 35%', '35% – 50%', 'More than 50%'];
-    var optsRu = ['15% – 25%', '25% – 35%', '35% – 50%', 'Более 50%'];
+    var optsEn = ['15–25%', '25–35%', '35–50%', 'More than 50%'];
+    var optsRu = ['15–25%', '25–35%', '35–50%', 'Более 50%'];
     var opts = currentLang === 'ru' ? optsRu : optsEn;
     return chip(15, seq.length) +
-      qTitle('During your period of employment in Uzbekistan, how much of your monthly income do you estimate you spend here on food, rent, and local transportation?',
-             'В период работы в Узбекистане какую долю Вашего месячного дохода, по Вашей оценке, Вы тратите здесь на питание, аренду жилья и местный транспорт?') +
+      qTitle('During your period of employment in Uzbekistan, what share of your monthly income did you spend in Uzbekistan on food, rent, and local transportation?',
+             'В период Вашей трудовой деятельности в Узбекистане какую долю Вашего месячного дохода Вы потратили в Узбекистане на питание, аренду жилья и местный транспорт?') +
       qSub('Please select one option.', 'Пожалуйста, выберите один вариант.') +
       '<ul class="opt-list">' +
       opts.map(function (o, i) {
