@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
 
-from .models import PostalOffice, StaffProfile
+from .models import AdminTOTPDevice, PostalOffice, StaffProfile
 
 
 @admin.register(PostalOffice)
@@ -39,6 +39,20 @@ class UserAdmin(BaseUserAdmin):
 
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
+
+@admin.register(AdminTOTPDevice)
+class AdminTOTPDeviceAdmin(admin.ModelAdmin):
+    list_display = ('user', 'is_active', 'is_verified', 'created_at', 'last_used_at')
+    list_filter = ('is_active', 'is_verified')
+    search_fields = ('user__username', 'user__email')
+    readonly_fields = ('secret', 'created_at', 'last_used_at')
+    actions = ['reset_devices']
+
+    @admin.action(description="Tanlangan qurilmalarni reset qilish (qayta sozlash kerak)")
+    def reset_devices(self, request, queryset):
+        n = queryset.update(is_verified=False)
+        self.message_user(request, f"{n} ta qurilma reset qilindi. Foydalanuvchilar qayta QR skanlashi kerak.")
+
 
 admin.site.site_header = "Turizm so'rovnoma — Boshqaruv paneli"
 admin.site.site_title = "Turizm so'rovnoma"

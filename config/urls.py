@@ -7,6 +7,8 @@ from django.http import JsonResponse
 from django.urls import path, include
 from django.views.generic import TemplateView, RedirectView
 
+from accounts import admin_auth
+
 
 def healthcheck(request):
     """Render keep-alive / monitoring uchun. Tezkor 200 OK qaytaradi."""
@@ -17,7 +19,15 @@ admin_url = os.getenv('ADMIN_URL', 'admin/')
 if not admin_url.endswith('/'):
     admin_url += '/'
 
+# Admin login + 2FA — admin.site.urls dan OLDIN aniqlanadi.
+# Django admin dispatcher /admin/login/ ga ham javob beradi, lekin biz buni
+# custom view bilan ushlab olamiz.
 urlpatterns = [
+    path(admin_url + 'login/', admin_auth.admin_login_view, name='admin_login'),
+    path(admin_url + '2fa/verify/', admin_auth.admin_2fa_verify, name='admin_2fa_verify'),
+    path(admin_url + '2fa/setup/', admin_auth.admin_2fa_setup, name='admin_2fa_setup'),
+    path(admin_url + '2fa/cancel/', admin_auth.admin_2fa_cancel, name='admin_2fa_cancel'),
+
     path(admin_url, admin.site.urls),
 
     # Serve favicon from static files to avoid 404 noise

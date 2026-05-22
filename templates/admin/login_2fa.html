@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin kirishi — Turizm so'rovnoma{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --navy: #0f3a6e;
+    --blue: #1a5fa8;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --bg: #f5f7fb;
+    --danger: #c0392b;
+  }
+  body { background: var(--bg); font-family: 'Nunito', sans-serif; color: var(--text); }
+  .login-pages { width: 100%; max-width: 480px; margin: 0 auto; }
+  .login-card { padding: 34px 30px 38px; background: #fff; border-radius: 20px; box-shadow: 0 8px 30px rgba(15,58,110,.10); }
+  .login-header {
+    background: var(--navy); text-align: center; padding: 13px 24px;
+    border-radius: 50px; margin: 0 18px 24px; color: #fff;
+    font-weight: 800; font-size: 12px; letter-spacing: 2px;
+  }
+  .login-title { font-size: 24px; font-weight: 900; color: var(--text); margin-bottom: 8px; text-align: center; }
+  .login-sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; text-align: center; }
+  .field-label { display: block; font-weight: 700; font-size: 13px; margin: 12px 0 6px; color: var(--text); }
+  .field-input {
+    width: 100%; padding: 13px 16px; border: 1.5px solid #d1d5db;
+    border-radius: 12px; font-size: 15px; font-family: 'Nunito', sans-serif;
+    background: #fff; transition: border .15s, box-shadow .15s;
+    box-sizing: border-box;
+  }
+  .field-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,95,168,.15); outline: none; }
+  .btn-submit {
+    width: 100%; padding: 16px; background: var(--blue); color: #fff;
+    border: none; border-radius: 14px; font-family: 'Nunito', sans-serif;
+    font-weight: 800; font-size: 16px; cursor: pointer; margin-top: 18px;
+    box-shadow: 0 4px 18px rgba(26,95,168,.28);
+  }
+  .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(26,95,168,.35); }
+  .error-msg {
+    background: #fdecea; border-left: 3px solid var(--danger);
+    color: var(--danger); padding: 10px 14px; border-radius: 10px;
+    font-size: 13px; margin-bottom: 14px;
+  }
+  .container-center { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .login-hint { text-align: center; color: var(--muted); font-size: 12px; margin-top: 16px; line-height: 1.6; }
+  .captcha-row { display: flex; justify-content: center; margin: 18px 0 8px; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="container-center">
+  <div class="login-pages">
+    <div class="login-header">🛡️ &nbsp;ADMIN PANELI</div>
+    <div class="login-card">
+      <h2 class="login-title">Boshqaruvga kirish</h2>
+      <p class="login-sub">Login, parol va xavfsizlik tekshiruvi</p>
+
+      {% if form.non_field_errors %}
+        <div class="error-msg">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <label class="field-label" for="id_username">Login</label>
+        <input class="field-input" type="text" name="username" id="id_username"
+               placeholder="admin" autocomplete="username" autofocus required
+               value="{{ form.username.value|default:'' }}">
+        {% if form.username.errors %}<div class="error-msg">{{ form.username.errors|join:" " }}</div>{% endif %}
+
+        <label class="field-label" for="id_password">Parol</label>
+        <input class="field-input" type="password" name="password" id="id_password"
+               placeholder="••••••••" autocomplete="current-password" required>
+        {% if form.password.errors %}<div class="error-msg">{{ form.password.errors|join:" " }}</div>{% endif %}
+
+        <div class="captcha-row">{{ form.captcha }}</div>
+        {% if form.captcha.errors %}<div class="error-msg" style="text-align:center;">{{ form.captcha.errors|join:" " }}</div>{% endif %}
+
+        <input type="hidden" name="next" value="{{ next }}">
+        <button type="submit" class="btn-submit">Davom etish →</button>
+      </form>
+
+      <p class="login-hint">
+        Keyingi bosqichda Google Authenticator yoki shunga o'xshash<br>
+        ilovadan 6 raqamli kod talab qilinadi.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

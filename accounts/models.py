@@ -71,3 +71,33 @@ class StaffProfile(models.Model):
 
     def __str__(self):
         return f"{self.full_name or self.user.username} ({self.postal_office.code})"
+
+
+class AdminTOTPDevice(models.Model):
+    """Admin login uchun TOTP (Google Authenticator / Authy) qurilmasi.
+
+    Har bir adminda (is_staff=True) bitta qurilma boʻladi. `secret` —
+    pyotp.random_base32() bilan generatsiya qilinadi. `is_verified=True`
+    boʻlguncha foydalanuvchi setup sahifasiga yo'naltirib turiladi.
+    """
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='admin_totp',
+        verbose_name="Admin foydalanuvchi",
+    )
+    secret = models.CharField("TOTP secret (base32)", max_length=64)
+    is_active = models.BooleanField("Faolmi", default=True)
+    is_verified = models.BooleanField(
+        "Tasdiqlangan", default=False,
+        help_text="True boʻlsa, foydalanuvchi QR'ni skanlab birinchi kodni kiritgan.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Admin 2FA qurilmasi"
+        verbose_name_plural = "Admin 2FA qurilmalari"
+
+    def __str__(self):
+        return f"TOTP({self.user.username}, verified={self.is_verified})"

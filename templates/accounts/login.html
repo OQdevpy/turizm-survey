@@ -103,6 +103,11 @@
           {{ form.password }}
           {% if form.password.errors %}<div class="error-msg">{{ form.password.errors|join:" " }}</div>{% endif %}
 
+          <div class="captcha-row" style="margin: 18px 0 8px; display: flex; justify-content: center;">
+            {{ form.captcha }}
+          </div>
+          {% if form.captcha.errors %}<div class="error-msg" style="text-align:center;">{{ form.captcha.errors|join:" " }}</div>{% endif %}
+
           <button type="submit" class="btn-submit">Kirish</button>
         </form>
 

@@ -123,6 +123,9 @@ RECAPTCHA_PUBLIC_KEY = config('RECAPTCHA_PUBLIC_KEY', default='6LeIxAcTAAAAAJcZV
 RECAPTCHA_PRIVATE_KEY = config('RECAPTCHA_PRIVATE_KEY', default='6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe')
 SILENCED_SYSTEM_CHECKS = ['django_recaptcha.recaptcha_test_key_error']
 
+# Admin 2FA (TOTP — Google Authenticator)
+ADMIN_2FA_ISSUER = config('ADMIN_2FA_ISSUER', default="Turizm so'rovnoma")
+
 # WhiteNoise — DEBUG=False bo'lganda ham mahalliy testda ishlash uchun
 WHITENOISE_USE_FINDERS = True
 WHITENOISE_AUTOREFRESH = DEBUG
